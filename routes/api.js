@@ -18,16 +18,34 @@ router.get('/marshflitter', async function(req, res, next) {
   let { data, error } = await supabase
   .from('mtg_cards_master')
   .select('*')
-  .eq('id', '64da2ec1-fca9-4488-8ac7-78d645a8bf62')
+  .eq('id', '64da2ec1-fca9-4488-8ac7-78d645a8bf62');
 
   if (error) {
     console.log(error)
     return
   }
 
-  console.log(data)
+  console.log(data);
 
-  res.json(data[0])
+  res.json(data[0]);
+
+});
+
+router.get('/search/query=:queryText', async function(req, res, next) {
+
+  let { data, error } = await supabase
+  .from('mtg_cards_master')
+  .select('*')
+  .textSearch('name', "'" + req.params.queryText + "'");
+
+  if (error) {
+    console.log(error)
+    return
+  }
+
+  console.log(data);
+
+  res.json(data);
 
 });
 
