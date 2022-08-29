@@ -31,7 +31,7 @@ router.get('/marshflitter', async function(req, res, next) {
 
 });
 
-router.get('/search/query=:queryText', async function(req, res, next) {
+router.post('/search/query=:queryText', async function(req, res, next) {
 
   let { data, error } = await supabase
   .from('mtg_cards_master')
