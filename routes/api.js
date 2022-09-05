@@ -6,8 +6,8 @@ var router = express.Router();
 // Database Access
 const { createClient } = require('@supabase/supabase-js')
 const supabase = createClient(
-  'https://pkzscplmxataclyrehsr.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrenNjcGxteGF0YWNseXJlaHNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NjAzNTg4NTksImV4cCI6MTk3NTkzNDg1OX0.o08ahJ-vSqgwZVLF1DGzRgm8oCuSV-5WlGJinuTj4PA'
+  process.env.SUPABASE_URL,
+  process.env.API_KEY
 )
 
 
@@ -21,18 +21,26 @@ const deckMaster = 'atc_deck_master'
 // 
 // Returns: id, name, image_uris
 router.post('/search/card/query=:queryCard', async function(req, res, next) {
+  
+  const results = []
 
   let { data, error } = await supabase
   .from(atcMaster)
-  .select('id, name, image_uris')
+  .select('id, name, image_uris, set_shorthand, color_identity')
   .ilike('name', '%' + req.params.queryCard + '%')
+
+  results[0] = data
 
   if (error) {
     console.log(error)
     return
   }
 
-  res.json(data)
+  if(data.length === 0){
+    await requery(req.params.queryCard, results)
+  }
+
+  res.json(results[0])
 
 });
 
@@ -72,6 +80,17 @@ router.post('/get/card/id=:cardID', async function(req, res, next) {
     return
   }
 
+  // Since card_faces was proving time and time again to fail, this will grab the entry via Scryfall's API.
+  const fetch = require('node-fetch');
+  let url='https://api.scryfall.com/cards/' + req.params.cardID
+  let settings = { method: "Get" };
+
+  await fetch(url, settings)
+    .then(res => res.json())
+    .then((json) => {
+      data[0].card_faces = json.card_faces
+  });
+
   res.json(data)
 
 });
@@ -98,7 +117,7 @@ router.post('/get/deck/id=:deckID', async function(req, res, next) {
     await getCards(data[i].card_id, results);
   }
 
-  res.json(results)
+  res.json({deck_id: data[0].deck_id, name: data[0].name, cover_art: data[0].cover_art, user_id: data[0].user_id, cards: results})
 
 });
 
@@ -116,9 +135,40 @@ async function getCards(cardID, results){
     return
   }
 
+  // Since card_faces was proving time and time again to fail, this will grab the entry via Scryfall's API.
+  const fetch = require('node-fetch');
+  let url='https://api.scryfall.com/cards/' + cardID
+  let settings = { method: "Get" };
+
+  await fetch(url, settings)
+    .then(res => res.json())
+    .then((json) => {
+      data[0].card_faces = json.card_faces
+  });
+
   results.push(data[0])
 
 }
+
+
+// Helper Function For Getting A ReQuery
+async function requery(cardName, results){
+
+  let newQuery = cardName.substring(0, cardName.length - 1) + '\'s'
+  let { data, error } = await supabase
+  .from(atcMaster)
+  .select('id, name, image_uris, set_shorthand, color_identity')
+  .ilike('name', '%' + newQuery + '%')
+
+  if (error) {
+    console.log(error)
+    return
+  }
+
+  results[0] = data
+
+}
+
 
 // Must ALWAYS Be At The Bottom
 module.exports = router;
