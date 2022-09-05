@@ -26,7 +26,7 @@ router.post('/search/card/query=:queryCard', async function(req, res, next) {
 
   let { data, error } = await supabase
   .from(atcMaster)
-  .select('id, name, image_uris, set_shorthand, color_identity')
+  .select('id, name, image_uris, color_identity, set_shorthand, set_type, card_faces')
   .ilike('name', '%' + req.params.queryCard + '%')
 
   results[0] = data
@@ -40,9 +40,32 @@ router.post('/search/card/query=:queryCard', async function(req, res, next) {
     await requery(req.params.queryCard, results)
   }
 
+  for (let i = 0; i < data.length; i++){
+    if(data[i].card_faces !== null){
+      await flipCards(data[i].id, data, i);
+    }
+  }
+
   res.json(results[0])
 
 });
+
+
+// Helper Function for Flip Cards
+async function flipCards(cardID, data, index){
+
+  // Since card_faces was proving time and time again to fail, this will grab the entry via Scryfall's API.
+  const fetch = require('node-fetch');
+  let url='https://api.scryfall.com/cards/' + cardID
+  let settings = { method: "Get" };
+
+  await fetch(url, settings)
+    .then(res => res.json())
+    .then((json) => {
+      data[index].card_faces = json.card_faces
+  });
+
+}
 
 
 // Basic Deck Search Query
