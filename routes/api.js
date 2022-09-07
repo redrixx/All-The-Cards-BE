@@ -15,6 +15,7 @@ const supabase = createClient(
 const atcMaster = 'atc_cards_master'
 const decksMaster = 'atc_decks_master'
 const deckMaster = 'atc_deck_master'
+const usersMaster = 'atc_users_master'
 
 
 // Basic Card Search Query
@@ -37,7 +38,7 @@ router.post('/search/card/query=:queryCard', async function(req, res, next) {
   }
 
   if(data.length === 0){
-    await requery(req.params.queryCard, results)
+    //await requery(req.params.queryCard, results)
   }
 
   for (let i = 0; i < data.length; i++){
@@ -73,6 +74,8 @@ async function flipCards(cardID, data, index){
 // Returns: id, name, image_uris
 router.post('/search/deck/query=:queryDeck', async function(req, res, next) {
 
+  const username = []
+
   let { data, error } = await supabase
   .from(deckMaster)
   .select()
@@ -81,6 +84,11 @@ router.post('/search/deck/query=:queryDeck', async function(req, res, next) {
   if (error) {
     console.log(error)
     return
+  }
+
+  for (let i = 0; i < data.length; i++){
+    await getUsername(data[i].user_id, username)
+    data[i].user_name = username[0]
   }
 
   res.json(data)
@@ -125,6 +133,7 @@ router.post('/get/card/id=:cardID', async function(req, res, next) {
 router.post('/get/deck/id=:deckID', async function(req, res, next) {
 
   const results = []
+  const username = []
 
   let { data, error } = await supabase
   .from(decksMaster)
@@ -140,7 +149,9 @@ router.post('/get/deck/id=:deckID', async function(req, res, next) {
     await getCards(data[i].card_id, results);
   }
 
-  res.json({deck_id: data[0].deck_id, name: data[0].name, cover_art: data[0].cover_art, user_id: data[0].user_id, cards: results})
+  await getUsername(data[0].user_id, username)
+
+  res.json({deck_id: data[0].deck_id, name: data[0].name, cover_art: data[0].cover_art, user_name: username[0], user_id: data[0].user_id, cards: results})
 
 });
 
@@ -167,7 +178,7 @@ async function getCards(cardID, results){
     .then(res => res.json())
     .then((json) => {
       data[0].card_faces = json.card_faces
-  });
+  })
 
   results.push(data[0])
 
@@ -189,6 +200,24 @@ async function requery(cardName, results){
   }
 
   results[0] = data
+
+}
+
+
+// Helper Function For Getting A ReQuery
+async function getUsername(id, username){
+
+  let { data, error } = await supabase
+  .from(usersMaster)
+  .select('username')
+  .eq('id', id)
+
+  if (error) {
+    console.log(error)
+    return
+  }
+
+  username[0] = data[0].username
 
 }
 
