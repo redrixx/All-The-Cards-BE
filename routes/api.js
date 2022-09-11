@@ -18,12 +18,53 @@ const deckMaster = 'atc_deck_master'
 const usersMaster = 'atc_users_master'
 
 
+// Random Art Crop Query
+// 
+// Returns: art_crop url for random card
+router.post('/features/random/art', async function(req, res, next) {
+
+  const alphabet = "abcdefghijklmnopqrstuvwxyz"
+  let id = alphabet[Math.floor(Math.random() * alphabet.length)]
+
+  let validArt = false
+  let artData = null;
+
+  while(!validArt){
+
+    let { data, error } = await supabase
+    .from(atcMaster)
+    .select('image_uris')
+    .ilike('name', '%' + id + '%')
+    .limit(1)
+
+    if (error) {
+      console.log(error)
+      return
+    }
+
+    if(data[0].image_uris){
+      validArt = true
+      artData = data[0].image_uris.art_crop;
+    }else{
+      id = alphabet[Math.floor(Math.random() * alphabet.length)]
+    }
+
+  }
+
+  res.json({randomArt : artData})
+
+});
+
+
 // Basic Card Search Query
 // 
-// Returns: id, name, image_uris
+// Returns: id, name, image_uris, color_identity, set_shorthand, set_type, card_faces, layout, frame, promo, lang, border_color, frame_effects
 router.post('/search/card/query=:queryCard', async function(req, res, next) {
   
   const results = []
+
+  let queryCleanse = req.params.queryCard.split(" ").join("&")
+  console.log(queryCleanse)
 
   let { data, error } = await supabase
   .from(atcMaster)
@@ -37,8 +78,95 @@ router.post('/search/card/query=:queryCard', async function(req, res, next) {
     return
   }
 
-  if(data.length === 0){
-    //await requery(req.params.queryCard, results)
+  for (let i = 0; i < data.length; i++){
+    if(data[i].card_faces !== null){
+      await flipCards(data[i].id, data, i);
+    }
+  }
+
+  res.json(results[0])
+
+});
+
+
+// Advanced Card Search Query
+// 
+// Returns: id, name, image_uris, color_identity, set_shorthand, set_type, card_faces, layout, frame, promo, lang, border_color, frame_effects
+router.post('/search/card/adv/query?', async function(req, res, next) {
+
+  const allQuery = {
+    'artist': '*', 
+    'cmc': '*', 
+    'color_identity': '*',
+    'colors': '*',
+    'flavor_text': '*',
+    'legalities': '*',
+    'name': '*',
+    'oracle_text': '*',
+    'power': '*',
+    'rarity': '*',
+    'set_name': '*',
+    'set_shorthand': '*',
+    'subtype_': '*',
+    'toughness': '*',
+    'type_': '*'
+  }
+
+  for (var key in req.query){
+    allQuery[key] = req.query[key]
+  }
+  
+  const results = []
+
+  const advancedParameters = {
+    'artist': 'artist.ilike.*,artist.is.null',
+    'cmc': 'cmc.ilike.*,cmc.is.null',
+    'colors': 'colors.ilike.*,colors.is.null',
+    'flavor_text': 'flavor_text.ilike.*,flavor_text.is.null',
+    'oracle_text': 'oracle_text.ilike.*,oracle_text.is.null',
+    'power': 'power.ilike.*,power.is.null',
+    'subtype_': 'subtype_one.ilike.*,subtype_two.ilike.*,subtype_one.is.null,subtype_two.is.null',
+    'toughness': 'toughness.ilike.*,toughness.is.null',
+    'type_': 'type_one.ilike.*,type_two.ilike.*,type_one.is.null,type_two.is.null'
+  }
+
+  for (var key in allQuery){
+    if(allQuery[key] !== null){
+      if(key === 'subtype_'){
+        advancedParameters[key] = `subtype_one.ilike.%${allQuery[key]}%, subtype_two.ilike.%${allQuery[key]}%`
+      }else if(key === 'type_'){
+        advancedParameters[key] = `type_one.ilike.%${allQuery[key]}%, type_two.ilike.%${allQuery[key]}%`
+      }else{
+        advancedParameters[key] = `${key}.ilike.%${allQuery[key]}%`
+      }
+    }
+  }
+
+  // "Best Case Scenario Search"
+  let { data, error } = await supabase
+  .from(atcMaster)
+  .select('id, name, artist, border_color, card_faces, cmc, color_identity, colors, flavor_text, frame, frame_effects, image_uris, lang, layout, legalities, oracle_text, power, promo, rarity, set_name, set_shorthand, set_type, toughness, type_one, type_two, subtype_one, subtype_two')
+  .or(advancedParameters['artist'])
+  .or(advancedParameters['cmc'])
+  .ilike('color_identity', '%' + allQuery.color_identity + '%')
+  .or(advancedParameters['colors'])
+  .or(advancedParameters['flavor_text'])
+  //.ilike('legalities->>standard', allQuery.legalities) // TEST LINE
+  .ilike('name', '%' + allQuery.name + '%')
+  .or(advancedParameters['oracle_text'])
+  .or(advancedParameters['power'])
+  .ilike('rarity', allQuery.rarity)
+  .ilike('set_name', '%' + allQuery.set_name + '%')
+  .ilike('set_shorthand', allQuery.set_shorthand)
+  .or(advancedParameters['subtype_'])
+  .or(advancedParameters['toughness'])
+  .or(advancedParameters['type_'])
+
+  results[0] = data
+
+  if (error) {
+    console.log(error)
+    return
   }
 
   for (let i = 0; i < data.length; i++){
@@ -47,6 +175,7 @@ router.post('/search/card/query=:queryCard', async function(req, res, next) {
     }
   }
 
+  //console.log('RECORDS : ' + data.length)
   res.json(results[0])
 
 });
@@ -69,9 +198,37 @@ async function flipCards(cardID, data, index){
 }
 
 
+// Recent Deck Search Query
+// 
+// Returns: recent decks - deck_id, name, cover_art, user_id, user_name, created
+router.post('/features/recent/decks', async function(req, res, next) {
+
+  const username = []
+
+  let { data, error } = await supabase
+  .from(deckMaster)
+  .select()
+  .order('created', {ascending: false})
+  .limit(6)
+
+  if (error) {
+    console.log(error)
+    return
+  }
+
+  for (let i = 0; i < data.length; i++){
+    await getUsername(data[i].user_id, username)
+    data[i].user_name = username[0]
+  }
+
+  res.json(data)
+
+});
+
+
 // Basic Deck Search Query
 // 
-// Returns: id, name, image_uris
+// Returns: deck_id, name, cover_art, user_id, user_name, created
 router.post('/search/deck/query=:queryDeck', async function(req, res, next) {
 
   const username = []
