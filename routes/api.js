@@ -131,7 +131,7 @@ router.post('/search/card/adv/query?', async function(req, res, next) {
   }
 
   for (var key in allQuery){
-    if(allQuery[key] !== null){
+    if(allQuery[key] !== '*'){
       if(key === 'subtype_'){
         advancedParameters[key] = `subtype_one.ilike.%${allQuery[key]}%, subtype_two.ilike.%${allQuery[key]}%`
       }else if(key === 'type_'){
