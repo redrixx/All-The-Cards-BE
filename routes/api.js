@@ -35,16 +35,17 @@ router.post('/features/random/art', async function(req, res, next) {
     .from(atcMaster)
     .select('image_uris')
     .ilike('name', '%' + id + '%')
-    .limit(1)
+    .limit(100)
 
     if (error) {
       console.log(error)
       return
     }
-
-    if(data[0].image_uris){
+    let random_from_length = Math.floor(Math.random() * data.length)
+    // console.log(data.length + " " + random_from_length)
+    if(data[random_from_length].image_uris){
       validArt = true
-      artData = data[0].image_uris.art_crop;
+      artData = data[random_from_length].image_uris.art_crop;
     }else{
       id = alphabet[Math.floor(Math.random() * alphabet.length)]
     }
@@ -92,7 +93,7 @@ router.post('/search/card/query=:queryCard', async function(req, res, next) {
 // Advanced Card Search Query
 // 
 // Returns: id, name, image_uris, color_identity, set_shorthand, set_type, card_faces, layout, frame, promo, lang, border_color, frame_effects
-router.post('/search/card/adv/query?', async function(req, res, next) {
+router.post('/search/card/adv/query=?', async function(req, res, next) {
 
   const allQuery = {
     'artist': '*', 
