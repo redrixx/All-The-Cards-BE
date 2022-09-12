@@ -69,7 +69,7 @@ router.post('/search/card/query=:queryCard', async function(req, res, next) {
 
   let { data, error } = await supabase
   .from(atcMaster)
-  .select('id, name, image_uris, color_identity, set_shorthand, set_type, card_faces, layout, frame, promo, lang, border_color, frame_effects')
+  .select('id, name, image_uris, color_identity, released_at, set_name, set_shorthand, set_type, card_faces, layout, frame, promo, lang, border_color, frame_effects')
   .ilike('name', '%' + req.params.queryCard + '%')
 
   results[0] = data
