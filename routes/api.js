@@ -2,6 +2,7 @@
 const cardRequests = require('../requests/card.js')
 const deckRequests = require('../requests/deck.js')
 const featureRequests = require('../requests/features.js')
+const userRequests = require('../requests/user.js')
 
 
 // Initial Setup

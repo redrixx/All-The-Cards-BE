@@ -11,7 +11,7 @@ const decksMaster = 'atc_decks_master'
 const deckMaster = 'atc_deck_master'
 const usersMaster = 'atc_users_master'
 
-// Helper Function for Flip Cards
+// Helper function for flip cards
 async function flipCards(cardID, data, index) {
 
     // Since card_faces was proving time and time again to fail, this will grab the entry via Scryfall's API.
@@ -25,6 +25,20 @@ async function flipCards(cardID, data, index) {
             data[index].card_faces = json.card_faces
         })
 
+}
+
+// Helper function for advanced search's color_identity requirements
+function getCombinations(array) {
+    var result = [];   
+    var f = function(prefix=[], array) {
+        for (var i = 0; i < array.length; i++) {
+            result.push([...prefix,array[i]]);       
+            f([...prefix,array[i]], array.slice(i + 1));     
+        }   
+        
+    }   
+    f('', array);   
+    return result; 
 }
 
 
@@ -69,7 +83,7 @@ module.exports = {
 
         let { data, error } = await supabase
             .from(atcMaster)
-            .select('id, name, image_uris, color_identity, set_shorthand, set_type, card_faces, layout, frame, promo, lang, border_color, frame_effects')
+            .select('id, name, image_uris, color_identity, set_shorthand, set_type, card_faces, layout, frame, promo, lang, border_color, frame_effects, released_at, set_name')
             .ilike('name', '%' + req.params.queryCard + '%')
 
         results[0] = data
@@ -149,16 +163,39 @@ module.exports = {
                     const colors = allQuery[key].split(',')
                     advancedParameters[key] = ''
                     for(var color in colors){
-                        advancedParameters[key] += `${key}.ilike.%${colors[color]}%,`
+                        if(colors[color] === 'C'){
+                            advancedParameters[key] += `${key}.eq.[],`
+                        }else{
+                            advancedParameters[key] += `${key}.ilike.%${colors[color]}%,`
+                        }
                     }
                     advancedParameters[key] = advancedParameters[key].substring(0, advancedParameters[key].length - 1)
 
                 } else if (key === 'color_identity') {
 
-                    const quoteFix = new RegExp('"', "g");
-                    const spaceFix = new RegExp(',', "g");
-                    const commanders = JSON.stringify(allQuery[key].split(',')).replace(quoteFix, "'").replace(spaceFix, ", ")
-                    advancedParameters[key] = `${key}.eq."${commanders}"`
+                    if(allQuery[key] === 'C'){
+
+                        advancedParameters[key] = `${key}.eq.[]`
+
+                    }else{
+
+                        const quoteFix = new RegExp('"', "g");
+                        const spaceFix = new RegExp(',', "g");
+    
+                        if(allQuery[key].includes('C')){
+                            allQuery[key] = allQuery[key].substring(0, allQuery[key].length - 2)
+                        }
+
+                        const totalCommanders = getCombinations(allQuery[key].split(','))
+    
+                        advancedParameters[key] = ''
+                        for(var commander in totalCommanders){
+                            const commanders = JSON.stringify(totalCommanders[commander]).replace(quoteFix, "'").replace(spaceFix, ", ")
+                            advancedParameters[key] += `${key}.eq."${commanders}",`
+                        }
+                        advancedParameters[key] += ` ${key}.eq.[]`
+
+                    }
 
                 } else if (key === 'legalities') {  
 
@@ -180,7 +217,7 @@ module.exports = {
         // "Best Case Scenario Search"
         let { data, error } = await supabase
             .from(atcMaster)
-            .select('id, name, artist, border_color, card_faces, cmc, color_identity, colors, flavor_text, frame, frame_effects, image_uris, lang, layout, legalities, oracle_text, power, promo, rarity, set_name, set_shorthand, set_type, toughness, type_one, type_two, subtype_one, subtype_two')
+            .select('id, name, artist, border_color, card_faces, cmc, color_identity, colors, flavor_text, frame, frame_effects, image_uris, lang, layout, legalities, oracle_text, power, promo, rarity, set_name, set_shorthand, set_type, toughness, type_one, type_two, subtype_one, subtype_two, released_at, set_name')
             .or(advancedParameters['artist'])
             .or(advancedParameters['cmc'])
             .or(advancedParameters['color_identity'])
