@@ -24,17 +24,6 @@ async function getCards(cardID, results) {
         return
     }
 
-    // Since card_faces was proving time and time again to fail, this will grab the entry via Scryfall's API.
-    const fetch = require('node-fetch');
-    let url = 'https://api.scryfall.com/cards/' + cardID
-    let settings = { method: "Get" };
-
-    await fetch(url, settings)
-        .then(res => res.json())
-        .then((json) => {
-            data[0].card_faces = json.card_faces
-        })
-
     results.push(data[0])
 
 }

@@ -50,6 +50,14 @@ router.post('/search/deck/query=:queryDeck', async function (req, res, next) {
 });
 
 
+// Basic User Search Query
+router.post('/search/user/query=:queryUser', async function (req, res, next) {
+
+  res.json(await userRequests.userSearch(req))
+
+});
+
+
 // Card ID Query
 router.post('/get/card/id=:cardID', async function (req, res, next) {
 
@@ -62,6 +70,14 @@ router.post('/get/card/id=:cardID', async function (req, res, next) {
 router.post('/get/deck/id=:deckID', async function (req, res, next) {
 
   res.json(await deckRequests.getDeckID(req))
+
+});
+
+
+// User ID Query
+router.post('/get/user/id=:userID', async function (req, res, next) {
+
+  res.json(await userRequests.getUserID(req))
 
 });
 
