@@ -5,27 +5,12 @@ const supabase = createClient(
     process.env.API_KEY
 )
 
-// Table References
+// Database References
+const limitedData = 'id, name, artist, border_color, card_faces, cmc, color_identity, colors, digital, flavor_text, frame, frame_effects, full_art, image_uris, lang, layout, legalities, oracle_text, power, promo, rarity, released_at, set_name, set_shorthand, set_type, toughness, type_one, type_two, subtype_one, subtype_two'
 const atcMaster = 'atc_cards_master'
 const decksMaster = 'atc_decks_master'
 const deckMaster = 'atc_deck_master'
 const usersMaster = 'atc_users_master'
-
-// Helper function for flip cards
-async function flipCards(cardID, data, index) {
-
-    // Since card_faces was proving time and time again to fail, this will grab the entry via Scryfall's API.
-    const fetch = require('node-fetch');
-    let url = 'https://api.scryfall.com/cards/' + cardID
-    let settings = { method: "Get" }
-
-    await fetch(url, settings)
-        .then(res => res.json())
-        .then((json) => {
-            data[index].card_faces = json.card_faces
-        })
-
-}
 
 // Helper function for advanced search's color_identity requirements
 function getCombinations(array) {
@@ -39,6 +24,21 @@ function getCombinations(array) {
     }   
     f('', array);   
     return result; 
+}
+
+// Helper function for getting updated prices via Scryfall's API
+async function getUpdatedPrices(card){
+
+    const fetch = require('node-fetch');
+    let url = 'https://api.scryfall.com/cards/' + card.id
+    let settings = { method: "Get" }
+
+    await fetch(url, settings)
+        .then(res => res.json())
+        .then((json) => {
+            card.prices = json.prices
+    })
+
 }
 
 
@@ -56,19 +56,9 @@ module.exports = {
 
         if (error) {
             console.log(error)
-            return
+        }else{
+            await getUpdatedPrices(data[0])
         }
-
-        // Since card_faces was proving time and time again to fail, this will grab the entry via Scryfall's API.
-        const fetch = require('node-fetch');
-        let url = 'https://api.scryfall.com/cards/' + req.params.cardID
-        let settings = { method: "Get" }
-
-        await fetch(url, settings)
-            .then(res => res.json())
-            .then((json) => {
-                data[0].card_faces = json.card_faces
-            })
 
         return data;
 
@@ -83,7 +73,7 @@ module.exports = {
 
         let { data, error } = await supabase
             .from(atcMaster)
-            .select('id, name, image_uris, color_identity, set_shorthand, set_type, card_faces, layout, frame, promo, lang, border_color, frame_effects, released_at, set_name')
+            .select(limitedData)
             .ilike('name', '%' + req.params.queryCard + '%')
 
         results[0] = data
@@ -91,12 +81,6 @@ module.exports = {
         if (error) {
             console.log(error)
             return
-        }
-
-        for (let i = 0; i < data.length; i++) {
-            if (data[i].card_faces !== null) {
-                await flipCards(data[i].id, data, i);
-            }
         }
 
         return results[0]
@@ -164,9 +148,9 @@ module.exports = {
                     advancedParameters[key] = ''
                     for(var color in colors){
                         if(colors[color] === 'C'){
-                            advancedParameters[key] += `${key}.eq.[],`
+                            advancedParameters[key] += `${key}.eq.[],card_faces->0->>colors.eq.[],card_faces->1->>colors.eq.[],`
                         }else{
-                            advancedParameters[key] += `${key}.ilike.%${colors[color]}%,`
+                            advancedParameters[key] += `${key}.ilike.%${colors[color]}%,card_faces->0->>colors.ilike.%${colors[color]}%,card_faces->1->>colors.ilike.%${colors[color]}%,`
                         }
                     }
                     advancedParameters[key] = advancedParameters[key].substring(0, advancedParameters[key].length - 1)
@@ -217,7 +201,7 @@ module.exports = {
         // "Best Case Scenario Search"
         let { data, error } = await supabase
             .from(atcMaster)
-            .select('id, name, artist, border_color, card_faces, cmc, color_identity, colors, flavor_text, frame, frame_effects, image_uris, lang, layout, legalities, oracle_text, power, promo, rarity, set_name, set_shorthand, set_type, toughness, type_one, type_two, subtype_one, subtype_two, released_at, set_name')
+            .select(limitedData)
             .or(advancedParameters['artist'])
             .or(advancedParameters['cmc'])
             .or(advancedParameters['color_identity'])
@@ -239,12 +223,6 @@ module.exports = {
         if (error) {
             console.log(error)
             return
-        }
-
-        for (let i = 0; i < data.length; i++) {
-            if (data[i].card_faces !== null) {
-                await flipCards(data[i].id, data, i);
-            }
         }
 
         //console.log('RECORDS : ' + data.length)

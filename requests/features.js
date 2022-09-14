@@ -40,7 +40,7 @@ module.exports = {
         let id = alphabet[Math.floor(Math.random() * alphabet.length)]
 
         let validArt = false
-        let artData = null;
+        let artData = null
 
         while (!validArt) {
 
@@ -93,6 +93,6 @@ module.exports = {
 
         return data
 
-    }
+    },
 
 }
