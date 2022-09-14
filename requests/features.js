@@ -48,7 +48,7 @@ module.exports = {
                 .from(atcMaster)
                 .select('image_uris')
                 .ilike('name', '%' + id + '%')
-                .limit(1)
+                .limit(100)
 
             if (error) {
                 console.log(error)
