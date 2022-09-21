@@ -49,6 +49,13 @@ router.post('/features/editor/decks', async function (req, res, next) {
 
 });
 
+// Deck Editor Retrieve
+router.post('/features/editor/retrieve', async function (req, res, next) {
+
+  res.json(await deckRequests.editDeck(req))
+
+});
+
 
 // Basic Deck Search Query
 router.post('/search/deck/query=:queryDeck', async function (req, res, next) {
