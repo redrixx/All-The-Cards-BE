@@ -50,7 +50,7 @@ This project is coded in JavaScript, using a [NodeJS](https://nodejs.org/en/) va
 
 ## Installation
 
-To run this project, you will need to have [NodeJS](https://nodejs.org/en/) installed on your system. Unzip the folder, open PowerShell or Bash in that folder, and run `npm install`. Then you can run `npm start` to execute the backend. Most of the requests are `GET` methods. [Postman](https://www.postman.com/) is best suited for sending requests.
+To run this project, you will need to have [NodeJS](https://nodejs.org/en/) installed on your system. Unzip the folder, open PowerShell or Bash in that folder, and run `npm install`. Then you can run `npm start` to execute the backend. Most of the requests are `POST` methods. [Postman](https://www.postman.com/) is best suited for sending requests.
 
 ## Development Setup
 
