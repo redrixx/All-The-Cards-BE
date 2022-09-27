@@ -53,6 +53,20 @@ module.exports = {
 
         return data
 
-    }
+    },
+
+    // Update User Settings Query
+    // 
+    // Returns: message or error
+    updateUser: async function (req) {
+
+        console.log(req.body)
+
+        const { data , error } = await supabase.auth.getUser(req.headers.token)
+        console.log(data)
+
+        return {Message: 'Testing...'}
+
+    },
 
 }

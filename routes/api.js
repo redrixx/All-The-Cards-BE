@@ -105,5 +105,13 @@ router.post('/get/user/id=:userID', async function (req, res, next) {
 });
 
 
+// User Settings Update Query
+router.post('/features/user/update', async function (req, res, next) {
+
+  res.json(await userRequests.updateUser(req))
+
+});
+
+
 // Must ALWAYS Be At The Bottom
 module.exports = router;
