@@ -14,6 +14,12 @@ const usersMaster = 'atc_users_master'
 // Helper function for getting a username
 async function getUsername(id, username) {
 
+    if(!username[0] | username[0] === 'anonymous'){ 
+
+        username[0] = 'anonymous'
+
+    }else{
+
     let { data, error } = await supabase
         .from(usersMaster)
         .select('username')
@@ -25,6 +31,8 @@ async function getUsername(id, username) {
     }
 
     username[0] = data[0].username
+
+    }
 
 }
 

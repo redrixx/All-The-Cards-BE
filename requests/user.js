@@ -11,16 +11,12 @@ const decksMaster = 'atc_decks_master'
 const deckMaster = 'atc_deck_master'
 const usersMaster = 'atc_users_master'
 
-
 module.exports = {
 
     // User ID Query
     // 
     // Returns: Information for user page - very basic currently
     getUserID: async function (req) {
-
-        const results = []
-        const username = []
 
         let { data, error } = await supabase
             .from(usersMaster)
@@ -60,10 +56,64 @@ module.exports = {
     // Returns: message or error
     updateUser: async function (req) {
 
-        console.log(req.body)
+        // "email" : null,
+        // "password" : null,
+        // "username" : null,
+        // "bio" : null,
+        // "name" : null,
+        // "location" : null,
+        // "avatar" : null
 
-        const { data , error } = await supabase.auth.getUser(req.headers.token)
-        console.log(data)
+        if(!req.headers.token){
+            return {Error: 'Invalid token received.'}
+        }else{
+
+            const { data } = await supabase.auth.getUser(req.headers.token)
+            console.log(data)
+
+            if(!req.body.email){
+                console.log('Blank email.')
+            }else{
+
+            }
+
+            if(!req.body.password){
+                console.log('Blank password.')
+            }else{
+
+            }
+
+            if(!req.body.username){
+                console.log('Blank username.')
+            }else{
+
+            }
+
+            if(!req.body.bio){
+                console.log('Blank bio.')
+            }else{
+
+            }
+
+            if(!req.body.name){
+                console.log('Blank name.')
+            }else{
+
+            }
+
+            if(!req.body.location){
+                console.log('Blank location.')
+            }else{
+
+            }
+
+            if(!req.body.avatar){
+                console.log('Blank avatar.')
+            }else{
+
+            }
+
+        }
 
         return {Message: 'Testing...'}
 

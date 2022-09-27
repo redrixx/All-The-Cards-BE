@@ -57,8 +57,12 @@ async function getUsername(id) {
         .eq('id', id)
 
     if (error) {
-        console.log(error)
-        return
+        if(!data){
+            data = [{username: 'anonymous'}] 
+        }else{
+            console.log(error)
+            return
+        }
     }
 
     return data[0].username
@@ -158,6 +162,8 @@ module.exports = {
             // New Deck Creation
             date = new Date()
             date = new Date(date.getTime() - date.getTimezoneOffset()*60000);
+
+            if(!payload.authorID){ payload.authorID = 'anonymous' }
 
             const { data, error } = await supabase
                 .from(deckMaster)
