@@ -56,66 +56,117 @@ module.exports = {
     // Returns: message or error
     updateUser: async function (req) {
 
-        // "email" : null,
-        // "password" : null,
-        // "username" : null,
-        // "bio" : null,
-        // "name" : null,
-        // "location" : null,
-        // "avatar" : null
+        var response = {Message : {}, Error: {}}
+        var userData
 
         if(!req.headers.token){
-            return {Error: 'Invalid token received.'}
+            response.Error.Token = 'No token provided.'
         }else{
 
-            const { data } = await supabase.auth.getUser(req.headers.token)
-            console.log(data)
+            const { data, error } = await supabase.auth.getUser(req.headers.token)
+            if(error){ response.Error.Token = 'Invalid token provided.'; return response }
+            userData = data
 
             if(!req.body.email){
-                console.log('Blank email.')
+                response.Message.Email = 'No email provided.'
             }else{
-
+                response.Message.Email = 'Email update attempt.'
             }
 
             if(!req.body.password){
-                console.log('Blank password.')
+                response.Message.Password = 'No password provided.'
             }else{
-
+                response.Message.Password = 'Password update attempt.'
             }
 
             if(!req.body.username){
-                console.log('Blank username.')
+                response.Message.Username = 'No username provided.'
             }else{
+
+                const { error } = await supabase
+                    .from(usersMaster)
+                    .update({username : req.body.username})
+                    .eq('id', userData.user.id)
+
+                if(!error){ 
+                    response.Message.Username = 'Update successful.' 
+                }else{ 
+                    response.Error.Username = 'An unexpected error occured.' 
+                }
 
             }
 
             if(!req.body.bio){
-                console.log('Blank bio.')
+                response.Message.Bio = 'No bio provided.'
             }else{
+
+                const { error } = await supabase
+                .from(usersMaster)
+                .update({bio : req.body.bio})
+                .eq('id', userData.user.id)
+
+                if(!error){ 
+                    response.Message.Bio = 'Update successful.' 
+                }else{ 
+                    response.Error.Bio = 'An unexpected error occured.' 
+                }
 
             }
 
             if(!req.body.name){
-                console.log('Blank name.')
+                response.Message.Name = 'No name provided.'
             }else{
+
+                const { error } = await supabase
+                .from(usersMaster)
+                .update({name : req.body.name})
+                .eq('id', userData.user.id)
+
+                if(!error){ 
+                    response.Message.Name = 'Update successful.' 
+                }else{ 
+                    response.Error.Name = 'An unexpected error occured.' 
+                }
 
             }
 
             if(!req.body.location){
-                console.log('Blank location.')
+                response.Message.Location = 'No location provided.'
             }else{
+
+                const { error } = await supabase
+                .from(usersMaster)
+                .update({location : req.body.location})
+                .eq('id', userData.user.id)
+
+                if(!error){ 
+                    response.Message.Location = 'Update successful.' 
+                }else{ 
+                    response.Error.Location = 'An unexpected error occured.' 
+                }
 
             }
 
             if(!req.body.avatar){
-                console.log('Blank avatar.')
+                response.Message.Avatar = 'No avatar provided.'
             }else{
+
+                const { error } = await supabase
+                .from(usersMaster)
+                .update({avatar : req.body.avatar})
+                .eq('id', userData.user.id)
+
+                if(!error){ 
+                    response.Message.Avatar = 'Update successful.' 
+                }else{ 
+                    response.Error.Avatar = 'An unexpected error occured.' 
+                }
 
             }
 
         }
 
-        return {Message: 'Testing...'}
+        return response
 
     },
 

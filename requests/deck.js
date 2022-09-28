@@ -147,6 +147,7 @@ module.exports = {
         const payload = req.body
 
         var response = {}
+        var deckURL
 
         // console.log(payload.deckID)
         // console.log(payload.authorID)
@@ -178,6 +179,8 @@ module.exports = {
             }).select()
 
             if(!error){
+
+                deckURL = data[0].id
 
                 for(var card in payload.cards){
                     const { error } = await supabase
@@ -221,6 +224,8 @@ module.exports = {
 
             if(!error){
 
+                deckURL = payload.deckID
+
                 for(var card in payload.cards){
                     const { error } = await supabase
                         .from(decksMaster)
@@ -244,7 +249,7 @@ module.exports = {
 
         }
 
-        response = {Message: "Deck created successfully."}
+        response = {Message: "Deck created successfully.", "URL" : `/api/get/deck/id=${deckURL}`}
         return response
 
     },
