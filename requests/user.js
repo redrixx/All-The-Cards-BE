@@ -4,12 +4,23 @@ const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.API_KEY
 )
+const superbase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SERVICE_KEY
+)
 
 // Table References
 const atcMaster = 'atc_cards_master'
 const decksMaster = 'atc_decks_master'
 const deckMaster = 'atc_deck_master'
 const usersMaster = 'atc_users_master'
+
+// Helper function to validate emails...somewhat
+function validateEmail(email) {
+    var re = /\S+@\S+\.\S+/;
+    return re.test(email);
+}
+
 
 module.exports = {
 
@@ -70,13 +81,36 @@ module.exports = {
             if(!req.body.email){
                 response.Message.Email = 'No email provided.'
             }else{
-                response.Message.Email = 'Email update attempt.'
+
+                if(validateEmail(req.body.email)){
+
+                    const { error } = await superbase.auth.admin.updateUserById(userData.user.id, {email: req.body.email})
+
+                    if(!error){ 
+                        response.Message.Email = 'Update successful.' 
+                    }else{ 
+                        response.Error.Email = 'An unexpected error occured.' 
+                    }
+
+                }else{
+                    response.Error.Email = 'Invalid email provided.'
+                }
+
             }
 
             if(!req.body.password){
                 response.Message.Password = 'No password provided.'
             }else{
-                response.Message.Password = 'Password update attempt.'
+                
+                const { error } = await superbase.auth.admin.updateUserById(userData.user.id, {password: req.body.password})
+
+                if(!error){ 
+                    response.Message.Password = 'Update successful.' 
+                }else{ 
+                    response.Error.Password = 'An unexpected error occured.' 
+                    console.log(error)
+                }
+
             }
 
             if(!req.body.username){
