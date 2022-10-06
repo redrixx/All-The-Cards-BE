@@ -204,4 +204,104 @@ module.exports = {
 
     },
 
+    // Update User Favorites Query
+    // 
+    // Returns: message or error
+    updateFavorites: async function (req) {
+
+        var response = {Message : {}, Error: {}}
+        var userData
+
+        if(!req.headers.token){
+            response.Error.Token = 'No token provided.'
+        }else{
+
+            const { data, error } = await supabase.auth.getUser(req.headers.token)
+            if(error){ response.Error.Token = 'Invalid token provided.'; return response }
+            userData = data
+
+            if(!req.body){
+                response.Error.Body = 'No request provided.'
+            }else{
+
+                if(req.body.card){
+
+                    const { data, error } = await supabase
+                        .from(usersMaster)
+                        .select('favorites')
+                        .eq('id', userData.user.id)
+
+                    if(!error){
+
+                        if(data[0].favorites.cards.includes(req.body.card)){
+
+                            data[0].favorites.cards = data[0].favorites.cards.filter(e => e !== req.body.card)
+                            const { error } = await supabase
+                            .from(usersMaster)
+                            .update({ 'favorites' : data[0].favorites })
+                            .eq('id', userData.user.id)
+
+                            if(!error){ response.Message.Body = 'Favorite updated successfully.'; return response }
+
+                        }else{
+
+                            data[0].favorites.cards.push(req.body.card)
+                            const { error } = await supabase
+                            .from(usersMaster)
+                            .update({ 'favorites' : data[0].favorites })
+                            .eq('id', userData.user.id)
+
+                            if(!error){ response.Message.Body = 'Favorite updated successfully.'; return response }
+
+                        }
+
+                    }
+
+                }
+
+                if(req.body.deck){
+
+                    const { data, error } = await supabase
+                        .from(usersMaster)
+                        .select('favorites')
+                        .eq('id', userData.user.id)
+
+                    if(!error){
+
+                        if(data[0].favorites.decks.includes(req.body.deck)){
+
+                            data[0].favorites.decks = data[0].favorites.decks.filter(e => e !== req.body.deck)
+                            const { error } = await supabase
+                            .from(usersMaster)
+                            .update({ 'favorites' : data[0].favorites })
+                            .eq('id', userData.user.id)
+
+                            if(!error){ response.Message.Body = 'Favorite updated successfully.'; return response }
+
+                        }else{
+
+                            data[0].favorites.decks.push(req.body.deck)
+                            const { error } = await supabase
+                            .from(usersMaster)
+                            .update({ 'favorites' : data[0].favorites })
+                            .eq('id', userData.user.id)
+
+                            if(!error){ response.Message.Body = 'Favorite updated successfully.'; return response }
+
+                        }
+
+                    }
+
+                }
+
+                response.Error.Body = 'Invalid request provided.'
+
+            }
+
+        }
+
+        return response
+
+    },
+
 }
