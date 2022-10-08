@@ -12,11 +12,11 @@ const deckMaster = 'atc_deck_master'
 const usersMaster = 'atc_users_master'
 
 // Helper function for getting a username
-async function getUsername(id, username) {
+async function getUsername(id) {
 
-    if(!username[0] | username[0] === 'anonymous'){ 
+    if(!id | id === 'anonymous'){ 
 
-        username[0] = 'anonymous'
+        return ('anonymous')
 
     }else{
 
@@ -30,7 +30,7 @@ async function getUsername(id, username) {
         return
     }
 
-    username[0] = data[0].username
+    return (data[0].username)
 
     }
 
@@ -81,8 +81,6 @@ module.exports = {
     // Returns: recent decks - deck_id, name, cover_art, user_id, user_name, created
     getRecentDecks: async function (req) {
 
-        const username = []
-
         let { data, error } = await supabase
             .from(deckMaster)
             .select()
@@ -95,8 +93,7 @@ module.exports = {
         }
 
         for (let i = 0; i < data.length; i++) {
-            await getUsername(data[i].user_id, username)
-            data[i].user_name = username[0]
+            data[i].user_name = await getUsername(data[i].user_id)
         }
 
         return data
