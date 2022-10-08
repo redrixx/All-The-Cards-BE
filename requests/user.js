@@ -108,7 +108,6 @@ module.exports = {
                     response.Message.Password = 'Update successful.' 
                 }else{ 
                     response.Error.Password = 'An unexpected error occured.' 
-                    console.log(error)
                 }
 
             }
@@ -156,8 +155,16 @@ module.exports = {
                 .update({name : req.body.name})
                 .eq('id', userData.user.id)
 
-                if(!error){ 
-                    response.Message.Name = 'Update successful.' 
+                if(!error){
+                    
+                    const { error } = await superbase.auth.admin.updateUserById(userData.user.id, {user_metadata: { name: req.body.name }})
+    
+                    if(!error){ 
+                        response.Message.Name = 'Update successful.' 
+                    }else{ 
+                        response.Error.Name = 'An unexpected error occured.' 
+                    }
+
                 }else{ 
                     response.Error.Name = 'An unexpected error occured.' 
                 }
