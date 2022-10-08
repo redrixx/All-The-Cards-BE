@@ -69,6 +69,24 @@ async function getUsername(id) {
 
 }
 
+// Helper Function For Getting Deck Cards
+async function getFavoriteCount(deckID) {
+
+    var results
+
+    let { data, error } = await supabase
+        .from(usersMaster)
+        .select('id, username')
+        .ilike('favorites->>decks', `%${deckID}%` )
+
+    if (!error) {
+        results = data.length
+    }
+
+    return results
+
+}
+
 module.exports = {
 
     // Deck ID Query
@@ -92,7 +110,19 @@ module.exports = {
         results = await getDeckCards(req.params.deckID)
         username = await getUsername(data[0].user_id)
 
-        return ({ deck_id: data[0].id, created: data[0].created, name: data[0].name, description: data[0].description, tags: data[0].tags, format: data[0].format, cover_art: data[0].cover_art, user_name: username, user_id: data[0].user_id, cards: results })
+        return ({ 
+            deck_id: data[0].id, 
+            created: data[0].created, 
+            name: data[0].name, 
+            description: data[0].description, 
+            tags: data[0].tags, 
+            format: data[0].format, 
+            cover_art: data[0].cover_art, 
+            user_name: username, 
+            user_id: data[0].user_id, 
+            favorites: await getFavoriteCount(data[0].id),
+            cards: results 
+        })
 
     },
 
@@ -148,15 +178,6 @@ module.exports = {
 
         var response = {}
         var deckURL
-
-        // console.log(payload.deckID)
-        // console.log(payload.authorID)
-        // console.log(payload.coverCard)
-        // console.log(payload.description)
-        // console.log(payload.formatTag)
-        // console.log(payload.title)
-        // console.log(payload.tags)
-        // console.log(payload.cards)
 
         if(payload.deckID === null | payload.deckID === ""){
 
