@@ -26,7 +26,7 @@ function getCombinations(array) {
     return result; 
 }
 
-// Helper function for getting updated prices via Scryfall's API
+// Helper function for getting updated prices via Scryfall's API.
 async function getUpdatedPrices(card){
 
     const fetch = require('node-fetch');
@@ -43,6 +43,25 @@ async function getUpdatedPrices(card){
 
 
 module.exports = {
+
+    // Limited Data Card By ID
+    // 
+    // Returns: Limited Data Card Object
+    getLimitedCard: async function (cardID){
+
+        let { data, error } = await supabase
+            .from(atcMaster)
+            .select(limitedData)
+            .eq('id', cardID)
+
+        if (error) {
+            console.log(error)
+            return
+        }
+
+        return data[0]
+
+    },
 
     // Card ID Query
     // 
