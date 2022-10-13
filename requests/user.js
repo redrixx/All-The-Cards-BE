@@ -4,12 +4,23 @@ const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.API_KEY
 )
+const superbase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SERVICE_KEY
+)
 
 // Table References
 const atcMaster = 'atc_cards_master'
 const decksMaster = 'atc_decks_master'
 const deckMaster = 'atc_deck_master'
 const usersMaster = 'atc_users_master'
+
+// Helper function to validate emails...somewhat
+function validateEmail(email) {
+    var re = /\S+@\S+\.\S+/;
+    return re.test(email);
+}
+
 
 module.exports = {
 
@@ -70,13 +81,35 @@ module.exports = {
             if(!req.body.email){
                 response.Message.Email = 'No email provided.'
             }else{
-                response.Message.Email = 'Email update attempt.'
+
+                if(validateEmail(req.body.email)){
+
+                    const { error } = await superbase.auth.admin.updateUserById(userData.user.id, {email: req.body.email})
+
+                    if(!error){ 
+                        response.Message.Email = 'Update successful.' 
+                    }else{ 
+                        response.Error.Email = 'An unexpected error occured.' 
+                    }
+
+                }else{
+                    response.Error.Email = 'Invalid email provided.'
+                }
+
             }
 
             if(!req.body.password){
                 response.Message.Password = 'No password provided.'
             }else{
-                response.Message.Password = 'Password update attempt.'
+                
+                const { error } = await superbase.auth.admin.updateUserById(userData.user.id, {password: req.body.password})
+
+                if(!error){ 
+                    response.Message.Password = 'Update successful.' 
+                }else{ 
+                    response.Error.Password = 'An unexpected error occured.' 
+                }
+
             }
 
             if(!req.body.username){
@@ -122,8 +155,16 @@ module.exports = {
                 .update({name : req.body.name})
                 .eq('id', userData.user.id)
 
-                if(!error){ 
-                    response.Message.Name = 'Update successful.' 
+                if(!error){
+                    
+                    const { error } = await superbase.auth.admin.updateUserById(userData.user.id, {user_metadata: { name: req.body.name }})
+    
+                    if(!error){ 
+                        response.Message.Name = 'Update successful.' 
+                    }else{ 
+                        response.Error.Name = 'An unexpected error occured.' 
+                    }
+
                 }else{ 
                     response.Error.Name = 'An unexpected error occured.' 
                 }
@@ -161,6 +202,106 @@ module.exports = {
                 }else{ 
                     response.Error.Avatar = 'An unexpected error occured.' 
                 }
+
+            }
+
+        }
+
+        return response
+
+    },
+
+    // Update User Favorites Query
+    // 
+    // Returns: message or error
+    updateFavorites: async function (req) {
+
+        var response = {Message : {}, Error: {}}
+        var userData
+
+        if(!req.headers.token){
+            response.Error.Token = 'No token provided.'
+        }else{
+
+            const { data, error } = await supabase.auth.getUser(req.headers.token)
+            if(error){ response.Error.Token = 'Invalid token provided.'; return response }
+            userData = data
+
+            if(!req.body){
+                response.Error.Body = 'No request provided.'
+            }else{
+
+                if(req.body.card){
+
+                    const { data, error } = await supabase
+                        .from(usersMaster)
+                        .select('favorites')
+                        .eq('id', userData.user.id)
+
+                    if(!error){
+
+                        if(data[0].favorites.cards.includes(req.body.card)){
+
+                            data[0].favorites.cards = data[0].favorites.cards.filter(e => e !== req.body.card)
+                            const { error } = await supabase
+                            .from(usersMaster)
+                            .update({ 'favorites' : data[0].favorites })
+                            .eq('id', userData.user.id)
+
+                            if(!error){ response.Message.Body = 'Favorite updated successfully.'; return response }
+
+                        }else{
+
+                            data[0].favorites.cards.push(req.body.card)
+                            const { error } = await supabase
+                            .from(usersMaster)
+                            .update({ 'favorites' : data[0].favorites })
+                            .eq('id', userData.user.id)
+
+                            if(!error){ response.Message.Body = 'Favorite updated successfully.'; return response }
+
+                        }
+
+                    }
+
+                }
+
+                if(req.body.deck){
+
+                    const { data, error } = await supabase
+                        .from(usersMaster)
+                        .select('favorites')
+                        .eq('id', userData.user.id)
+
+                    if(!error){
+
+                        if(data[0].favorites.decks.includes(req.body.deck)){
+
+                            data[0].favorites.decks = data[0].favorites.decks.filter(e => e !== req.body.deck)
+                            const { error } = await supabase
+                            .from(usersMaster)
+                            .update({ 'favorites' : data[0].favorites })
+                            .eq('id', userData.user.id)
+
+                            if(!error){ response.Message.Body = 'Favorite updated successfully.'; return response }
+
+                        }else{
+
+                            data[0].favorites.decks.push(req.body.deck)
+                            const { error } = await supabase
+                            .from(usersMaster)
+                            .update({ 'favorites' : data[0].favorites })
+                            .eq('id', userData.user.id)
+
+                            if(!error){ response.Message.Body = 'Favorite updated successfully.'; return response }
+
+                        }
+
+                    }
+
+                }
+
+                response.Error.Body = 'Invalid request provided.'
 
             }
 

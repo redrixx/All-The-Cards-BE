@@ -1,3 +1,6 @@
+// Imports
+const cardRequests = require('../requests/card.js')
+
 // Database Access
 const { createClient } = require('@supabase/supabase-js')
 const supabase = createClient(
@@ -5,7 +8,7 @@ const supabase = createClient(
     process.env.API_KEY
 )
 
-// Table References
+// Database References
 const atcMaster = 'atc_cards_master'
 const decksMaster = 'atc_decks_master'
 const deckMaster = 'atc_deck_master'
@@ -69,6 +72,24 @@ async function getUsername(id) {
 
 }
 
+// Helper Function For Getting Deck Cards
+async function getFavoriteCount(deckID) {
+
+    var results
+
+    let { data, error } = await supabase
+        .from(usersMaster)
+        .select('id, username')
+        .ilike('favorites->>decks', `%${deckID}%` )
+
+    if (!error) {
+        results = data.length
+    }
+
+    return results
+
+}
+
 module.exports = {
 
     // Deck ID Query
@@ -92,7 +113,19 @@ module.exports = {
         results = await getDeckCards(req.params.deckID)
         username = await getUsername(data[0].user_id)
 
-        return ({ deck_id: data[0].id, created: data[0].created, name: data[0].name, description: data[0].description, tags: data[0].tags, format: data[0].format, cover_art: data[0].cover_art, user_name: username, user_id: data[0].user_id, cards: results })
+        return ({ 
+            deck_id: data[0].id, 
+            created: data[0].created, 
+            name: data[0].name, 
+            description: data[0].description, 
+            tags: data[0].tags, 
+            format: data[0].format, 
+            cover_art: data[0].cover_art, 
+            user_name: username, 
+            user_id: data[0].user_id, 
+            favorites: await getFavoriteCount(data[0].id),
+            cards: results 
+        })
 
     },
 
@@ -148,15 +181,6 @@ module.exports = {
 
         var response = {}
         var deckURL
-
-        // console.log(payload.deckID)
-        // console.log(payload.authorID)
-        // console.log(payload.coverCard)
-        // console.log(payload.description)
-        // console.log(payload.formatTag)
-        // console.log(payload.title)
-        // console.log(payload.tags)
-        // console.log(payload.cards)
 
         if(payload.deckID === null | payload.deckID === ""){
 
@@ -259,8 +283,6 @@ module.exports = {
     // Returns: Formatted wipDeck
     editDeck: async function (req) {
 
-        const payload = req.body
-
         var response = {
             deckID: null,
             authorID: null,
@@ -272,46 +294,60 @@ module.exports = {
             cards: []
         }
 
-        if(payload.deckID === null | payload.deckID === ""){
+        if(!req.headers.token){
 
-            response = {Error: "An unexpected error occured during deck retrieval."}
+            response = {Error: "No token provided."}
             return response
-
+            
         }else{
 
-            // Existing Deck Retrieval
-            const { data, error } = await supabase
-                .from(deckMaster)
-                .select()
-                .eq('id', payload.deckID)
+            const { data, error } = await supabase.auth.getUser(req.headers.token)
+            if(error){ response = {Error: "Invalid token provided."}; return response }
+            userData = data
 
-            const deckData = data
+            if(!req.headers.deckid){
 
-            if(error | !deckData){
-
-                response = {Error: "An unexpected error occured during deck creation."}
+                response = {Error: "Invalid deckID provided."}
                 return response
-
+    
             }else{
-
-                response.deckID = deckData[0].id
-                response.authorID = deckData[0].user_id
-                response.coverCard = deckData[0].cover_art.slice(deckData[0].cover_art.lastIndexOf('/') + 1, deckData[0].cover_art.lastIndexOf('.'))
-                response.description = deckData[0].description
-                response.formatTag = deckData[0].format
-                response.title = deckData[0].name
-                response.tags = deckData[0].tags
-
-                const{ data } = await supabase
-                    .from(decksMaster)
+    
+                // Existing Deck Retrieval
+                const { data, error } = await supabase
+                    .from(deckMaster)
                     .select()
-                    .eq('deck_id', response.deckID)
-                    .select('card_id')
+                    .eq('id', req.headers.deckid)
+                    .eq('user_id', userData.user.id)
 
-                for(var card in data){
-                    response.cards.push(data[card].card_id)
+                const deckData = data
+    
+                if(error | !deckData | deckData.length === 0){
+    
+                    response = {Error: "An unexpected error occured during deck retrieval."}
+                    return response
+    
+                }else{
+    
+                    response.deckID = deckData[0].id
+                    response.authorID = deckData[0].user_id
+                    response.coverCard = await cardRequests.getLimitedCard(deckData[0].cover_art.slice(deckData[0].cover_art.lastIndexOf('/') + 1, deckData[0].cover_art.lastIndexOf('.')))
+                    response.description = deckData[0].description
+                    response.formatTag = deckData[0].format
+                    response.title = deckData[0].name
+                    response.tags = deckData[0].tags
+    
+                    const{ data } = await supabase
+                        .from(decksMaster)
+                        .select()
+                        .eq('deck_id', response.deckID)
+                        .select('card_id')
+    
+                    for(var card in data){
+                        response.cards.push(await cardRequests.getLimitedCard(data[card].card_id))
+                    }
+    
                 }
-
+    
             }
 
         }

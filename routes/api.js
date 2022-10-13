@@ -113,5 +113,13 @@ router.post('/features/user/update', async function (req, res, next) {
 });
 
 
+// User Card/Deck Favorite Update
+router.post('/features/user/favorite', async function (req, res, next) {
+
+  res.json(await userRequests.updateFavorites(req))
+
+});
+
+
 // Must ALWAYS Be At The Bottom
 module.exports = router;
