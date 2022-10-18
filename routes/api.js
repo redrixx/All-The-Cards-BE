@@ -49,10 +49,19 @@ router.post('/features/editor/decks', async function (req, res, next) {
 
 });
 
+
 // Deck Editor Retrieve
 router.post('/features/editor/retrieve', async function (req, res, next) {
 
   res.json(await deckRequests.editDeck(req))
+
+});
+
+
+// Deck Editor Delete
+router.delete('/features/editor/delete', async function (req, res, next) {
+
+  res.json(await deckRequests.deleteDeck(req))
 
 });
 

@@ -356,4 +356,84 @@ module.exports = {
 
     },
 
+    // Deck Editor Delete
+    // 
+    // Returns: Message or Error
+    deleteDeck: async function (req) {
+
+        var response = {}
+
+        if(!req.headers.token){
+
+            response = {Error: "No token provided."}
+            return response
+            
+        }else{
+
+            const { data, error } = await supabase.auth.getUser(req.headers.token)
+            if(error){ response = {Error: "Invalid token provided."}; return response }
+            userData = data
+
+            if(!req.headers.deckid){
+
+                response = {Error: "Invalid deckID provided."}
+                return response
+    
+            }else{
+    
+                // Existing Deck Check
+                const { data, error } = await supabase
+                    .from(deckMaster)
+                    .select()
+                    .eq('id', req.headers.deckid)
+                    .eq('user_id', userData.user.id)
+
+                const deckData = data
+    
+                if(error | !deckData | deckData.length === 0){
+    
+                    response = {Error: "An unexpected error occured during deck removal."}
+                    return response
+    
+                }else{  // Proceed with Deletion
+    
+                    // Deletion at the Deck Cards Level
+                    const{} = await supabase
+                        .from(decksMaster)
+                        .delete()
+                        .eq('deck_id', req.headers.deckid)
+
+                    // Deletion at the Deck Header Level
+                    const{} = await supabase
+                        .from(deckMaster)
+                        .delete()
+                        .eq('id', req.headers.deckid)
+
+                    // Deletion at the Deck Favorites Level
+                    const{data, error} = await supabase
+                        .from(usersMaster)
+                        .select('id, favorites')
+                        .ilike('favorites->>decks', `%${req.headers.deckid}%`)
+
+                    for(var entry in data){
+
+                        data[entry].favorites.decks = data[entry].favorites.decks.filter(e => e !== req.headers.deckid)
+                        const { error } = await supabase
+                        .from(usersMaster)
+                        .update({ 'favorites' : data[entry].favorites })
+                        .eq('id', data[entry].id)
+
+                    }
+    
+                }
+    
+            }
+
+        }
+
+        response = {Message: "Deck deletion successful."}
+        return response
+
+    },
+
 }
