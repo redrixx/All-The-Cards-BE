@@ -389,8 +389,10 @@ module.exports = {
                     .eq('user_id', userData.user.id)
 
                 const deckData = data
+
+                if(deckData) { if(deckData.length === 0) { response = {Error: "An unexpected error occured during deck removal."}; return response } }
     
-                if(error | !deckData | deckData.length === 0){
+                if(!data | error | !deckData){
     
                     response = {Error: "An unexpected error occured during deck removal."}
                     return response
