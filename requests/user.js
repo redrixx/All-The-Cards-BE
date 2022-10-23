@@ -311,4 +311,73 @@ module.exports = {
 
     },
 
+    // User Account Delete
+    // 
+    // Returns: Message or Error
+    deleteUser: async function (req) {
+
+        var response = {}
+
+        if(!req.headers.token){
+
+            response = {Error: "No token provided."}
+            return response
+            
+        }else{
+
+            const { data, error } = await supabase.auth.getUser(req.headers.token)
+            if(error){ response = {Error: "Invalid token provided."}; return response }
+            userData = data
+
+            if(!req.headers.deletecontent){
+
+                response = {Error: "No response provided."}
+                return response
+    
+            }else{
+
+                if(req.headers.deletecontent === 'false'){ // All user content (cards, decks) will be converted to the anonymous pool.
+
+                    const { error } = await superbase.auth.admin.deleteUser(userData.user.id)
+                    if(error){
+
+                        response = {Error: "An unexpected error occurred during user account deletion."}
+                        return response 
+
+                    }else{
+
+                        const { error } = await supabase.from(usersMaster).delete().eq('id', userData.user.id)
+
+                    }
+
+                }else if(req.headers.deletecontent === 'true'){ // All user content (cards, decks) will be safely removed.
+
+                    const { error } = await superbase.auth.admin.deleteUser(userData.user.id)
+                    if(error){ 
+
+                        response = {Error: "An unexpected error occurred during user account deletion."}
+                        return response 
+
+                    }else{
+
+                        const { error } = await supabase.from(usersMaster).delete().eq('id', userData.user.id)
+                        
+                    }
+
+                }else{
+
+                    response = {Error: "Invalid response provided."}
+                    return response
+
+                }
+    
+            }
+
+        }
+
+        //response = {Message: "Account deletion successful."}
+        return response
+
+    },
+
 }
