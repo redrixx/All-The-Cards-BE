@@ -9,10 +9,59 @@ const supabase = createClient(
 )
 
 // Database References
+const limitedData = 'id, name, artist, border_color, card_faces, cmc, color_identity, colors, digital, finishes, flavor_text, frame, frame_effects, full_art, games, image_uris, lang, layout, legalities, mana_cost, oracle_text, power, promo, rarity, released_at, set_name, set_shorthand, set_type, toughness, type_one, type_two, subtype_one, subtype_two'
 const atcMaster = 'atc_cards_master'
 const decksMaster = 'atc_decks_master'
 const deckMaster = 'atc_deck_master'
 const usersMaster = 'atc_users_master'
+
+// Helper Function For Getting Deck Cards - Advanced Method
+async function getCardsAdvanced(deckID){
+
+    var cardIDs = []
+    var results = []
+    
+    let { data, error } = await supabase
+    .from(decksMaster)
+    .select('card_id')
+    .eq('deck_id', deckID)
+    .order('card_id')
+
+    cardIDs = data
+
+    if(!error){
+
+        var previousID = ""
+    
+        for (var index=0, max=cardIDs.length; index < max; ++index){
+    
+            if(cardIDs[index].card_id === previousID){
+
+                results.push(results[results.length - 1])
+
+            }else{
+
+                let { data, error } = await supabase
+                .from(atcMaster)
+                .select(limitedData)
+                .eq('id', cardIDs[index].card_id)
+        
+                if (!error) {
+                    results.push(data[0])
+                    previousID = cardIDs[index].card_id
+                }
+
+            }
+    
+        }
+
+        return results
+
+    }
+
+    return {Error: "An unexpected error occurred during deck retrieval."}
+
+}
 
 // Helper Function For Getting Deck Cards
 async function getDeckCards(deckID) {
@@ -25,7 +74,7 @@ async function getDeckCards(deckID) {
         .eq('deck_id', deckID)
 
     if (!error) {
-        for(var card in data){
+        for (var card=0, max=data.length; card < max; ++card){
             results.push(await getCard(data[card].card_id))
         }
     }
@@ -39,15 +88,17 @@ async function getCard(cardID) {
 
     let { data, error } = await supabase
         .from(atcMaster)
-        .select()
+        .select(limitedData)
         .eq('id', cardID)
 
-    if (error) {
-        console.log(error)
-        return
+    console.log(data)
+
+    if (!error) {
+        return data[0]
     }
 
-    return data[0]
+    console.log(error)
+    return error
 
 }
 
@@ -99,6 +150,7 @@ module.exports = {
 
         var results = []
         var username = []
+        var favorites = []
 
         let { data, error } = await supabase
             .from(deckMaster)
@@ -110,8 +162,10 @@ module.exports = {
             return
         }
 
-        results = await getDeckCards(req.params.deckID)
+        results = await getCardsAdvanced(req.params.deckID)
         username = await getUsername(data[0].user_id)
+        favorites = await getFavoriteCount(data[0].id)
+
 
         return ({ 
             deck_id: data[0].id, 
@@ -123,7 +177,7 @@ module.exports = {
             cover_art: data[0].cover_art, 
             user_name: username, 
             user_id: data[0].user_id, 
-            favorites: await getFavoriteCount(data[0].id),
+            favorites: favorites,
             cards: results 
         })
 
@@ -242,9 +296,10 @@ module.exports = {
             }).eq('id', payload.deckID)
 
             const{ error } = await supabase
-                .from(decksMaster)
-                .delete()
-                .eq('deck_id', payload.deckID)
+            .from(decksMaster)
+            .delete()
+            .eq('deck_id', payload.deckID)
+            .then()
 
             if(!error){
 
