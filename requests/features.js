@@ -36,6 +36,23 @@ async function getUsername(id) {
 
 }
 
+// Helper Function For Getting Cards
+async function getCard(cardID) {
+
+    let { data, error } = await supabase
+        .from(atcMaster)
+        .select()
+        .eq('id', cardID)
+
+    if (error) {
+        console.log(error)
+        return
+    }
+
+    return data[0]
+
+}
+
 
 module.exports = {
 
@@ -97,6 +114,41 @@ module.exports = {
         }
 
         return data
+
+    },
+
+    // Top Three Deck Search Query
+    // 
+    // Returns: top three decks - deck_id, name, cover_art, user_id, user_name, created
+    getTopDecks: async function (req) {
+
+        if(!req.headers.cardid){
+
+            return {Error: "No cardID provided."}
+
+        }else{
+
+            cardData = await getCard(req.headers.cardid)
+            if(cardData) { if(cardData.length === 0) { response = {Error: "An unexpected error occured during retrieval."}; return response } }
+
+            if(!cardData){
+
+                response = {Error: "An unexpected error occured during deck removal."}
+                return response
+
+            }else{ 
+
+            const { data, error } = await supabase
+            .from(decksMaster)
+            .select('card_id, deck_id')
+            .eq('card_id', cardData.id)
+
+            const unique = [... new Set(data.map(JSON.stringify))].map(JSON.parse)
+
+            return unique
+
+            }
+        }
 
     },
 

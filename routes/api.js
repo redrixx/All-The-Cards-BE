@@ -42,6 +42,14 @@ router.post('/features/recent/decks', async function (req, res, next) {
 });
 
 
+// Top Three Deck Search Query
+router.post('/features/topthree/decks', async function (req, res, next) {
+
+  res.json(await featureRequests.getTopDecks(req))
+
+});
+
+
 // Deck Editor Upload
 router.post('/features/editor/decks', async function (req, res, next) {
 
@@ -118,6 +126,14 @@ router.post('/get/user/id=:userID', async function (req, res, next) {
 router.post('/features/user/update', async function (req, res, next) {
 
   res.json(await userRequests.updateUser(req))
+
+});
+
+
+// User Account Delete
+router.delete('/features/user/delete', async function (req, res, next) {
+
+  res.json(await userRequests.deleteUser(req))
 
 });
 
