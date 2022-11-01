@@ -183,6 +183,26 @@ module.exports = {
 
     },
 
+    // Favorite Count From DeckID
+    // 
+    // Returns: favorited count for specified deckID
+    deckFavoriteCount: async function (deckID) {
+
+        var results
+
+        let { data, error } = await supabase
+            .from(usersMaster)
+            .select('id, username')
+            .ilike('favorites->>decks', `%${deckID}%` )
+
+        if (!error) {
+            results = data.length
+        }
+
+        return results
+
+    },
+
     // Deck by UserID Query
     // 
     // Returns: deck_id, name, cover_art, user_id, user_name, created
@@ -223,6 +243,27 @@ module.exports = {
         }
 
         return data
+
+    },
+
+    // Basic Deck Search Query By ID
+    // 
+    // Returns: deck_id, name, cover_art, user_id, user_name, created
+    deckSearchByID: async function (deckID) {
+
+        let { data, error } = await supabase
+            .from(deckMaster)
+            .select()
+            .eq('id', deckID)
+
+        if (error) {
+            console.log(error)
+            return
+        }
+
+        data[0].user_name = await getUsername(data[0].user_id)
+
+        return data[0]
 
     },
 
