@@ -1,52 +1,150 @@
+// Imports
+const cardRequests = require('../requests/card.js')
+const deckRequests = require('../requests/deck.js')
+const featureRequests = require('../requests/features.js')
+const userRequests = require('../requests/user.js')
+
+
+// Initial Setup
 var express = require('express');
 var router = express.Router();
-//var router = require('express-promise-router')()
 
-const { createClient } = require('@supabase/supabase-js')
-const supabase = createClient(
-  'https://pkzscplmxataclyrehsr.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrenNjcGxteGF0YWNseXJlaHNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NjAzNTg4NTksImV4cCI6MTk3NTkzNDg1OX0.o08ahJ-vSqgwZVLF1DGzRgm8oCuSV-5WlGJinuTj4PA'
-)
 
-/* GET users listing. */
-router.get('/moo', function(req, res, next) {
-  res.json({"Cow": "MooOoooooOOOOo, moo."});
-});
+// Random Art Crop Query
+router.post('/features/random/art', async function (req, res, next) {
 
-router.get('/marshflitter', async function(req, res, next) {
-
-  let { data, error } = await supabase
-  .from('mtg_cards_master')
-  .select('*')
-  .eq('id', '64da2ec1-fca9-4488-8ac7-78d645a8bf62');
-
-  if (error) {
-    console.log(error)
-    return
-  }
-
-  console.log(data);
-
-  res.json(data[0]);
+  res.json(await featureRequests.getRandomArt(req))
 
 });
 
-router.post('/search/query=:queryText', async function(req, res, next) {
 
-  let { data, error } = await supabase
-  .from('mtg_cards_master')
-  .select('*')
-  .textSearch('name', "'" + req.params.queryText + "'");
+// Basic Card Search Query
+router.post('/search/card/query=:queryCard', async function (req, res, next) {
 
-  if (error) {
-    console.log(error)
-    return
-  }
-
-  console.log(data);
-
-  res.json(data);
+  res.json(await cardRequests.cardSearch(req))
 
 });
 
+
+// Advanced Card Search Query
+router.post('/search/card/adv/query=?', async function (req, res, next) {
+
+  res.json(await cardRequests.cardSearchAdvanced(req))
+
+});
+
+
+// Recent Deck Search Query
+router.post('/features/recent/decks', async function (req, res, next) {
+
+  res.json(await featureRequests.getRecentDecks(req))
+
+});
+
+
+// Top Three Deck Search Query
+router.post('/features/topthree/decks', async function (req, res, next) {
+
+  res.json(await featureRequests.getTopDecks(req))
+
+});
+
+
+// Deck Editor Upload
+router.post('/features/editor/decks', async function (req, res, next) {
+
+  res.json(await deckRequests.createDeck(req))
+
+});
+
+
+// Deck Editor Retrieve
+router.post('/features/editor/retrieve', async function (req, res, next) {
+
+  res.json(await deckRequests.editDeck(req))
+
+});
+
+
+// Deck Editor Delete
+router.delete('/features/editor/delete', async function (req, res, next) {
+
+  res.json(await deckRequests.deleteDeck(req))
+
+});
+
+
+// Basic Deck Search Query
+router.post('/search/deck/query=:queryDeck', async function (req, res, next) {
+
+  res.json(await deckRequests.deckSearch(req))
+
+});
+
+
+// Basic User Search Query
+router.post('/search/user/query=:queryUser', async function (req, res, next) {
+
+  res.json(await userRequests.userSearch(req))
+
+});
+
+
+// Card ID Query
+router.post('/get/card/id=:cardID', async function (req, res, next) {
+
+  res.json(await cardRequests.getCardID(req))
+
+});
+
+
+// Deck ID Query
+router.post('/get/deck/id=:deckID', async function (req, res, next) {
+
+  res.json(await deckRequests.getDeckID(req))
+
+});
+
+
+// Decks by User Query
+router.post('/get/decks/user_id=:userID', async function (req, res, next) {
+
+  res.json(await deckRequests.decksByUser(req))
+
+});
+
+
+// User ID Query
+router.post('/get/user/id=:userID', async function (req, res, next) {
+
+  res.json(await userRequests.getUserID(req))
+
+});
+
+
+// User Settings Update Query
+router.post('/features/user/update', async function (req, res, next) {
+
+  res.json(await userRequests.updateUser(req))
+
+});
+
+
+// User Account Delete
+router.delete('/features/user/delete', async function (req, res, next) {
+
+  res.json(await userRequests.deleteUser(req))
+
+});
+
+
+// User Card/Deck Favorite Update
+router.post('/features/user/favorite', async function (req, res, next) {
+
+  res.json(await userRequests.updateFavorites(req))
+
+});
+
+
+// Must ALWAYS Be At The Bottom
 module.exports = router;
