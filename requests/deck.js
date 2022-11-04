@@ -175,7 +175,7 @@ module.exports = {
             tags: data[0].tags, 
             format: data[0].format, 
             cover_art: data[0].cover_art,
-            commander: data[0].commander,
+            commander: (await getCard(data[0].commander)),
             isValid: data[0].isValid, 
             user_name: username, 
             user_id: data[0].user_id, 
