@@ -294,7 +294,9 @@ module.exports = {
                     created: date.toISOString(),
                     format: payload.formatTag, 
                     description: payload.description, 
-                    tags: payload.tags
+                    tags: payload.tags,
+                    commander: payload.commander,
+                    isValid: payload.isValid
             }).select()
 
             if(!error){
@@ -333,7 +335,9 @@ module.exports = {
                     cover_art: (await getCard(payload.coverCard)).image_uris.art_crop, 
                     format: payload.formatTag, 
                     description: payload.description, 
-                    tags: payload.tags
+                    tags: payload.tags,
+                    commander: payload.commander,
+                    isValid: payload.isValid
             }).eq('id', payload.deckID)
 
             const{ error } = await supabase
