@@ -176,7 +176,7 @@ module.exports = {
             format: data[0].format, 
             cover_art: data[0].cover_art,
             commander: data[0].commander,
-            isValid: payload[0].isValid, 
+            isValid: data[0].isValid, 
             user_name: username, 
             user_id: data[0].user_id, 
             favorites: favorites,
