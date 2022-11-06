@@ -91,8 +91,6 @@ async function getCard(cardID) {
         .select(limitedData)
         .eq('id', cardID)
 
-    console.log(data)
-
     if (!error) {
         return data[0]
     }
@@ -165,7 +163,6 @@ module.exports = {
         results = await getCardsAdvanced(req.params.deckID)
         username = await getUsername(data[0].user_id)
         favorites = await getFavoriteCount(data[0].id)
-
 
         return ({ 
             deck_id: data[0].id, 

@@ -8,6 +8,7 @@ const supabase = createClient(
 // Database References
 const limitedData = 'id, name, artist, border_color, card_faces, cmc, color_identity, colors, digital, finishes, flavor_text, frame, frame_effects, full_art, games, image_uris, lang, layout, legalities, mana_cost, oracle_text, power, prices, produced_mana, promo, rarity, released_at, set_name, set_shorthand, set_type, toughness, type_one, type_two, subtype_one, subtype_two'
 const atcMaster = 'atc_cards_master'
+const atcCustom = 'atc_cards_custom'
 const decksMaster = 'atc_decks_master'
 const deckMaster = 'atc_deck_master'
 const usersMaster = 'atc_users_master'
@@ -247,6 +248,115 @@ module.exports = {
         //console.log('RECORDS : ' + data.length)
         return results[0]
 
-    }
+    },
+
+    // Card Editor Upload
+    // 
+    // Returns: Message or Error
+    createCard: async function (req) {
+
+        const payload = JSON.parse(req.body.card)
+
+        var response = {}
+        var cardURL
+
+        if(payload.id === null | payload.id === ""){
+
+            // New Card Creation
+            date = new Date()
+            date = new Date(date.getTime() - date.getTimezoneOffset()*60000);
+
+            if(!payload.author){ payload.author = 'anonymous' }
+
+            const { data, error } = await supabase
+                .from(atcCustom)
+                .insert({
+                    name: payload.name, 
+                    author: payload.author, 
+                    border_color: payload.border_color,
+                    cmc: payload.cmc,
+                    color_identity: payload.color_identity,
+                    colors: payload.colors,
+                    flavor_text: payload.flavor_text,
+                    frame: "2022 - IMPLEMENT FROM YEAR ON RELEASED_AT", // MUST IMPLEMENT
+                    frame_effects: payload.frame_effects,
+                    image_uris: payload.image_uris,    // MUST IMPLEMENT
+                    mana_cost: payload.mana_cost,
+                    oracle_text: payload.oracle_text,
+                    power: payload.power,
+                    produced_mana: payload.produced_mana,
+                    rarity: payload.rarity,
+                    toughness: payload.toughness,
+                    type_one: payload.type_one,
+                    subtype_one: payload.subtype_one,
+                    released_at: date.toISOString()
+            }).select()
+
+            if(!error){
+                
+                cardURL = data[0].id
+
+            }else{
+
+                response = {Error: "An unexpected error occured during card creation."}
+                return response
+
+            }
+
+        }
+
+        // }else{
+
+        //     // Existing Deck Edit
+        //     const { data } = await supabase
+        //         .from(atcCustom)
+        //         .update({
+        //             name: payload.title, 
+        //             user_id: payload.authorID, 
+        //             cover_art: (await getCard(payload.coverCard)).image_uris.art_crop, 
+        //             format: payload.formatTag, 
+        //             description: payload.description, 
+        //             tags: payload.tags,
+        //             commander: payload.commander,
+        //             isValid: payload.isValid
+        //     }).eq('id', payload.deckID)
+
+        //     const{ error } = await supabase
+        //     .from(atcCustom)
+        //     .delete()
+        //     .eq('deck_id', payload.deckID)
+        //     .then()
+
+        //     if(!error){
+
+        //         cardURL = payload.id
+
+        //         for(var card in payload.cards){
+        //             const { error } = await supabase
+        //                 .from(atcCustom)
+        //                 .insert({
+        //                     card_id: payload.cards[card],
+        //                     user_id: payload.authorID,
+        //                     deck_id: payload.deckID
+        //             })
+
+        //             if(error){
+        //                 response = {Error: "An unexpected error occured during card creation."}
+        //                 return response
+        //             }
+
+        //         }
+
+        //     }else{
+        //         response = {Error: "An unexpected error occured during card creation."}
+        //         return response
+        //     }
+
+        // }
+
+        response = {Message: "Card created successfully.", "URL" : `/api/get/card/id=${cardURL}`}
+        return response
+
+    },
 
 }

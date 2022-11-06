@@ -7,7 +7,18 @@ const userRequests = require('../requests/user.js')
 
 // Initial Setup
 var express = require('express');
+var multer = require('multer');
 var router = express.Router();
+
+const storage = multer.diskStorage({
+  destination (req, file, cb) {
+      cb(null, 'storage');
+  },
+  filename (req, file, cb) {
+      cb(null, file.originalname);
+  }
+})
+const upload = multer({storage});
 
 
 // Random Art Crop Query
@@ -50,7 +61,7 @@ router.post('/features/topthree/decks', async function (req, res, next) {
 });
 
 
-// Deck Editor Upload
+// Deck Editor Upload/Edit
 router.post('/features/editor/decks', async function (req, res, next) {
 
   res.json(await deckRequests.createDeck(req))
@@ -61,7 +72,8 @@ router.post('/features/editor/decks', async function (req, res, next) {
 // Deck Editor Retrieve
 router.post('/features/editor/retrieve', async function (req, res, next) {
 
-  res.json(await deckRequests.editDeck(req))
+  //res.json(await deckRequests.editDeck(req))
+  res.json({Message: "This function has been deprecated."})
 
 });
 
@@ -70,6 +82,14 @@ router.post('/features/editor/retrieve', async function (req, res, next) {
 router.delete('/features/editor/delete', async function (req, res, next) {
 
   res.json(await deckRequests.deleteDeck(req))
+
+});
+
+
+// Card Editor Upload/Edit
+router.post('/features/editor/cards', upload.fields([{name: 'art_crop'}, {name: 'png'}]), async function (req, res, next) {
+
+  res.json(await cardRequests.createCard(req))
 
 });
 
