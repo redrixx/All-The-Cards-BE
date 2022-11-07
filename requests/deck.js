@@ -172,6 +172,7 @@ module.exports = {
             tags: data[0].tags, 
             format: data[0].format, 
             cover_art: data[0].cover_art,
+            cover_card: (await getCard(data[0].cover_art.slice(data[0].cover_art.lastIndexOf('/') + 1, data[0].cover_art.lastIndexOf('.')))),
             commander: (await getCard(data[0].commander)),
             isValid: data[0].isValid, 
             user_name: username, 

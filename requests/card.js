@@ -1,8 +1,15 @@
+// Imports
+var fs = require('fs')
+
 // Database Access
 const { createClient } = require('@supabase/supabase-js')
 const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.API_KEY
+)
+const superbase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SERVICE_KEY
 )
 
 // Database References
@@ -12,6 +19,7 @@ const atcCustom = 'atc_cards_custom'
 const decksMaster = 'atc_decks_master'
 const deckMaster = 'atc_deck_master'
 const usersMaster = 'atc_users_master'
+const atcStorage = 'atc-custom'
 
 // Helper function for advanced search's color_identity requirements
 function getCombinations(array) {
@@ -39,6 +47,27 @@ async function getUpdatedPrices(card){
         .then((json) => {
             card.prices = json.prices
     })
+
+}
+
+// Helper function for uploading to Supabase bucket.
+async function importCardArt(art_crop, png){
+
+    if(art_crop){
+        const { error } = await superbase.storage.from(atcStorage).upload(art_crop[0].path, fs.readFileSync(art_crop[0].path), {contentType: art_crop[0].mimetype})
+        if(error){
+            return {Error: "An unexpected error occured during art_crop file upload."}
+        }
+    }
+
+    if(png){
+        const { error } = await superbase.storage.from(atcStorage).upload(png[0].path, fs.readFileSync(png[0].path), {contentType: png[0].mimetype})
+        if(error){
+            return {Error: "An unexpected error occured during png file upload."}
+        }
+    }
+
+    return {Message: "Card art has been imported successfully."}
 
 }
 
@@ -268,6 +297,9 @@ module.exports = {
 
             if(!payload.author){ payload.author = 'anonymous' }
 
+            var cardImport = importCardArt(req.files.art_crop, req.files.png)
+            if(cardImport.Error){return cardImport.Error}
+
             const { data, error } = await supabase
                 .from(atcCustom)
                 .insert({
@@ -278,9 +310,9 @@ module.exports = {
                     color_identity: payload.color_identity,
                     colors: payload.colors,
                     flavor_text: payload.flavor_text,
-                    frame: "2022 - IMPLEMENT FROM YEAR ON RELEASED_AT", // MUST IMPLEMENT
+                    frame: date.getYear(),
                     frame_effects: payload.frame_effects,
-                    image_uris: payload.image_uris,    // MUST IMPLEMENT
+                    image_uris: payload.image_uris,
                     mana_cost: payload.mana_cost,
                     oracle_text: payload.oracle_text,
                     power: payload.power,
@@ -307,7 +339,7 @@ module.exports = {
 
         // }else{
 
-        //     // Existing Deck Edit
+        //     // Existing Card Edit
         //     const { data } = await supabase
         //         .from(atcCustom)
         //         .update({
