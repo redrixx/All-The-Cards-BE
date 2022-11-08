@@ -53,21 +53,31 @@ async function getUpdatedPrices(card){
 // Helper function for uploading to Supabase bucket.
 async function importCardArt(art_crop, png){
 
+    var art_url, png_url
+
     if(art_crop){
+        
         const { error } = await superbase.storage.from(atcStorage).upload(art_crop[0].path, fs.readFileSync(art_crop[0].path), {contentType: art_crop[0].mimetype})
         if(error){
             return {Error: "An unexpected error occured during art_crop file upload."}
         }
+        const { data } = superbase.storage.from(atcStorage).getPublicUrl(`storage/cards/${art_crop[0].filename}`)
+        art_url = data.publicUrl
+
     }
 
     if(png){
+
         const { error } = await superbase.storage.from(atcStorage).upload(png[0].path, fs.readFileSync(png[0].path), {contentType: png[0].mimetype})
         if(error){
             return {Error: "An unexpected error occured during png file upload."}
         }
+        const { data } = superbase.storage.from(atcStorage).getPublicUrl(`storage/cards/${png[0].filename}`)
+        png_url = data.publicUrl
+
     }
 
-    return {Message: "Card art has been imported successfully."}
+    return {Message: "Card art has been imported successfully.", art_url, png_url}
 
 }
 
@@ -297,7 +307,7 @@ module.exports = {
 
             if(!payload.author){ payload.author = 'anonymous' }
 
-            var cardImport = importCardArt(req.files.art_crop, req.files.png)
+            var cardImport = await importCardArt(req.files.art_crop, req.files.png)
             if(cardImport.Error){return cardImport.Error}
 
             const { data, error } = await supabase
@@ -312,7 +322,7 @@ module.exports = {
                     flavor_text: payload.flavor_text,
                     frame: date.getYear(),
                     frame_effects: payload.frame_effects,
-                    image_uris: payload.image_uris,
+                    image_uris: {art_crop: cardImport.art_url, png: cardImport.png_url},
                     mana_cost: payload.mana_cost,
                     oracle_text: payload.oracle_text,
                     power: payload.power,
