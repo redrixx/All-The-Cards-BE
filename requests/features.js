@@ -1,3 +1,7 @@
+// Imports
+const cardRequests = require('../requests/card.js')
+const deckRequests = require('../requests/deck.js')
+
 // Database Access
 const { createClient } = require('@supabase/supabase-js')
 const supabase = createClient(
@@ -41,7 +45,7 @@ async function getCard(cardID) {
 
     let { data, error } = await supabase
         .from(atcMaster)
-        .select()
+        .select('id, name')
         .eq('id', cardID)
 
     if (error) {
@@ -50,6 +54,24 @@ async function getCard(cardID) {
     }
 
     return data[0]
+
+}
+
+// Helper Function For Getting Cards By Searching
+async function cardSearch(cardName) {
+
+    let { data, error } = await supabase
+        .from(atcMaster)
+        .select('id, name')
+        .eq('name', cardName)
+
+
+    if (error) {
+        console.log(error)
+        return
+    }
+
+    return data
 
 }
 
@@ -133,19 +155,56 @@ module.exports = {
 
             if(!cardData){
 
-                response = {Error: "An unexpected error occured during deck removal."}
+                response = {Error: "An unexpected error occured during retrieval."}
                 return response
 
-            }else{ 
+            }else{
+                
+                // Retrieve all variants of the same card by name
+                nameResults = await cardSearch(cardData.name)
+                
+                // Concat query string with all variants
+                var deckResults = []
+                var searchQuery = ""
+                for(var card in nameResults){
+                    searchQuery += `card_id.eq.${nameResults[card].id},`
+                }
+                searchQuery = searchQuery.substring(0, searchQuery.length - 1)
 
-            const { data, error } = await supabase
-            .from(decksMaster)
-            .select('card_id, deck_id')
-            .eq('card_id', cardData.id)
+                // The query string is searched against the deck-cards table,
+                // then unique-ified by deckIDs.
+                let { data } = await supabase
+                .from(decksMaster)
+                .select('deck_id')
+                .or(searchQuery)
+                deckResults = [... new Set(data.map(JSON.stringify))].map(JSON.parse)
 
-            const unique = [... new Set(data.map(JSON.stringify))].map(JSON.parse)
+                // The favorite counts for all the decks are retrieved,
+                // then the results are sorted in order descending.
+                var allResults = []
+                for(var deck in deckResults){
+                    allResults.push({deckID : deckResults[deck].deck_id})
+                    allResults[deck].favCount = await deckRequests.deckFavoriteCount(deckResults[deck].deck_id)
+                }
+                allResults.sort(function(a, b) {return b.favCount - a.favCount})
 
-            return unique
+                // Only the top three are needed, allResults is already in order.
+                // If the results are greater than 3, then only the first (top) three decks are gotten.
+                // If the results are fewer than 3, then all decks are gotten.
+                var topResults = []
+                if(allResults.length > 3){
+                    for(var entry = 0; entry < 3; entry++){
+                        topResults.push(await deckRequests.deckSearchByID(allResults[entry].deckID))
+                        topResults[entry].favorites = allResults[entry].favCount
+                    }
+                }else{
+                    for(var entry in allResults){
+                        topResults.push(await deckRequests.deckSearchByID(allResults[entry].deckID))
+                        topResults[entry].favorites = allResults[entry].favCount
+                    }
+                }
+
+                return topResults
 
             }
         }
