@@ -31,3 +31,5 @@ _ReSharper*/
 packages/
 *node_modules/*
 .env
+storage/cards/*
+!storage/cards/.gitkeep
