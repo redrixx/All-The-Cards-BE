@@ -9,7 +9,7 @@ const supabase = createClient(
 )
 
 // Database References
-const limitedData = 'id, name, artist, border_color, card_faces, cmc, color_identity, colors, digital, finishes, flavor_text, frame, frame_effects, full_art, games, image_uris, lang, layout, legalities, mana_cost, oracle_text, power, prices, produced_mana, promo, rarity, released_at, set_name, set_shorthand, set_type, toughness, type_one, type_two, subtype_one, subtype_two'
+const limitedData = 'id, name, artist, border_color, card_faces, cmc, color_identity, colors, digital, finishes, flavor_text, frame, frame_effects, full_art, games, image_uris, lang, layout, legalities, mana_cost, oracle_text, power, prices, produced_mana, promo, rarity, released_at, set_name, set_shorthand, set_type, toughness, type_one, type_two, subtype_one, subtype_two, mtgo_id, tcgplayer_id'
 const atcMaster = 'atc_cards_master'
 const decksMaster = 'atc_decks_master'
 const deckMaster = 'atc_deck_master'
@@ -91,8 +91,6 @@ async function getCard(cardID) {
         .select(limitedData)
         .eq('id', cardID)
 
-    console.log(data)
-
     if (!error) {
         return data[0]
     }
@@ -166,7 +164,6 @@ module.exports = {
         username = await getUsername(data[0].user_id)
         favorites = await getFavoriteCount(data[0].id)
 
-
         return ({ 
             deck_id: data[0].id, 
             created: data[0].created, 
@@ -174,12 +171,35 @@ module.exports = {
             description: data[0].description, 
             tags: data[0].tags, 
             format: data[0].format, 
-            cover_art: data[0].cover_art, 
+            cover_art: data[0].cover_art,
+            cover_card: (await getCard(data[0].cover_art.slice(data[0].cover_art.lastIndexOf('/') + 1, data[0].cover_art.lastIndexOf('.')))),
+            commander: (await getCard(data[0].commander)),
+            isValid: data[0].isValid, 
             user_name: username, 
             user_id: data[0].user_id, 
             favorites: favorites,
             cards: results 
         })
+
+    },
+
+    // Favorite Count From DeckID
+    // 
+    // Returns: favorited count for specified deckID
+    deckFavoriteCount: async function (deckID) {
+
+        var results
+
+        let { data, error } = await supabase
+            .from(usersMaster)
+            .select('id, username')
+            .ilike('favorites->>decks', `%${deckID}%` )
+
+        if (!error) {
+            results = data.length
+        }
+
+        return results
 
     },
 
@@ -226,6 +246,27 @@ module.exports = {
 
     },
 
+    // Basic Deck Search Query By ID
+    // 
+    // Returns: deck_id, name, cover_art, user_id, user_name, created
+    deckSearchByID: async function (deckID) {
+
+        let { data, error } = await supabase
+            .from(deckMaster)
+            .select()
+            .eq('id', deckID)
+
+        if (error) {
+            console.log(error)
+            return
+        }
+
+        data[0].user_name = await getUsername(data[0].user_id)
+
+        return data[0]
+
+    },
+
     // Deck Editor Upload
     // 
     // Returns: Message or Error
@@ -253,7 +294,9 @@ module.exports = {
                     created: date.toISOString(),
                     format: payload.formatTag, 
                     description: payload.description, 
-                    tags: payload.tags
+                    tags: payload.tags,
+                    commander: payload.commander,
+                    isValid: payload.isValid
             }).select()
 
             if(!error){
@@ -292,7 +335,9 @@ module.exports = {
                     cover_art: (await getCard(payload.coverCard)).image_uris.art_crop, 
                     format: payload.formatTag, 
                     description: payload.description, 
-                    tags: payload.tags
+                    tags: payload.tags,
+                    commander: payload.commander,
+                    isValid: payload.isValid
             }).eq('id', payload.deckID)
 
             const{ error } = await supabase
