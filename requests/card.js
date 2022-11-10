@@ -77,6 +77,13 @@ async function importCardArt(art_crop, png){
 
     }
 
+    if(art_crop && png){
+
+        fs.unlink(art_crop[0].path, function(err){if(err){console.log(err)}})
+        fs.unlink(png[0].path, function(err){if(err){console.log(err)}})
+
+    }
+
     return {Message: "Card art has been imported successfully.", art_url, png_url}
 
 }
