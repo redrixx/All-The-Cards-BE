@@ -26,7 +26,7 @@ module.exports = {
 
     // User ID Query
     // 
-    // Returns: Information for user page - very basic currently
+    // Returns: Information for user page
     getUserID: async function (req) {
 
         let { data, error } = await supabase
@@ -37,6 +37,10 @@ module.exports = {
         if (error) {
             console.log(error)
             return
+        }
+
+        if(data[0].isDev){
+            data[0].username = "\uD83D\uDC68\u200D\uD83D\uDCBB " + data[0].username
         }
 
         return (data)
