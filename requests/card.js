@@ -89,6 +89,25 @@ async function importCardArt(art_crop, png){
 }
 
 
+// Helper Function For Getting Card Cards
+async function getFavoriteCount(cardID) {
+
+    var results
+
+    let { data, error } = await supabase
+        .from(usersMaster)
+        .select('id, username')
+        .ilike('favorites->>cards', `%${cardID}%` )
+
+    if (!error) {
+        results = data.length
+    }
+
+    return results
+
+}
+
+
 module.exports = {
 
     // Limited Data Card By ID
@@ -124,6 +143,7 @@ module.exports = {
             console.log(error)
         }else{
             await getUpdatedPrices(data[0])
+            data[0].favorites = await getFavoriteCount(data[0].id)
         }
 
         return data;
