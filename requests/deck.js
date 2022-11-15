@@ -11,6 +11,7 @@ const supabase = createClient(
 // Database References
 const limitedData = 'id, name, artist, border_color, card_faces, cmc, color_identity, colors, digital, finishes, flavor_text, frame, frame_effects, full_art, games, image_uris, lang, layout, legalities, mana_cost, oracle_text, power, prices, produced_mana, promo, rarity, released_at, set_name, set_shorthand, set_type, toughness, type_one, type_two, subtype_one, subtype_two, mtgo_id, tcgplayer_id'
 const atcMaster = 'atc_cards_master'
+const atcCustom = 'atc_cards_custom'
 const decksMaster = 'atc_decks_master'
 const deckMaster = 'atc_deck_master'
 const usersMaster = 'atc_users_master'
@@ -41,13 +42,10 @@ async function getCardsAdvanced(deckID){
 
             }else{
 
-                let { data, error } = await supabase
-                .from(atcMaster)
-                .select(limitedData)
-                .eq('id', cardIDs[index].card_id)
+                var thisData = await getCard(cardIDs[index].card_id)
         
                 if (!error) {
-                    results.push(data[0])
+                    results.push(thisData)
                     previousID = cardIDs[index].card_id
                 }
 
@@ -86,17 +84,35 @@ async function getDeckCards(deckID) {
 // Helper Function For Getting Deck Cards
 async function getCard(cardID) {
 
-    let { data, error } = await supabase
-        .from(atcMaster)
-        .select(limitedData)
+    var cardData, cardError
+
+    if(cardID && cardID.startsWith("custom-")){
+
+        let { data, error } = await supabase
+        .from(atcCustom)
+        .select()
         .eq('id', cardID)
 
-    if (!error) {
-        return data[0]
+        cardData = data
+        cardError = error
+
+    }else{
+
+        let { data, error } = await supabase
+        .from(atcMaster)
+        .select()
+        .eq('id', cardID)
+
+        cardData = data
+        cardError = error
+
     }
 
-    console.log(error)
-    return error
+    if (cardError) {
+        console.log(cardError)
+    }
+
+    return cardData[0]
 
 }
 
@@ -139,6 +155,30 @@ async function getFavoriteCount(deckID) {
 
 }
 
+// Helper Function For Getting Cover Card
+async function getCoverCard(cardURL, data) {
+
+    var coverCard
+
+    if(cardURL && cardURL.startsWith("https://pkzscplmxataclyrehsr.supabase.co")){
+
+        let { data, error } = await supabase.from(atcCustom).select().eq('image_uris->>art_crop', cardURL)
+
+        if(!error){
+            coverCard = data[0]
+        }
+
+    }else{
+
+        coverCard = await getCard(data[0].cover_art.slice(data[0].cover_art.lastIndexOf('/') + 1, data[0].cover_art.lastIndexOf('.')))
+
+    }
+
+    return coverCard
+
+}
+
+
 module.exports = {
 
     // Deck ID Query
@@ -172,7 +212,7 @@ module.exports = {
             tags: data[0].tags, 
             format: data[0].format, 
             cover_art: data[0].cover_art,
-            cover_card: (await getCard(data[0].cover_art.slice(data[0].cover_art.lastIndexOf('/') + 1, data[0].cover_art.lastIndexOf('.')))),
+            cover_card: (await getCoverCard(data[0].cover_art, data)),
             commander: (await getCard(data[0].commander)),
             isValid: data[0].isValid, 
             user_name: username, 

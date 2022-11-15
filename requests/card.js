@@ -134,19 +134,42 @@ module.exports = {
     // Returns: Entire Card Object
     getCardID: async function (req) {
 
-        let { data, error } = await supabase
+        var cardData, cardError
+
+        if(req.params.cardID && req.params.cardID.startsWith("custom-")){
+
+            let { data, error } = await supabase
+            .from(atcCustom)
+            .select()
+            .eq('id', req.params.cardID)
+
+            cardData = data
+            cardError = error
+
+        }else{
+
+            let { data, error } = await supabase
             .from(atcMaster)
             .select()
             .eq('id', req.params.cardID)
 
-        if (error) {
-            console.log(error)
-        }else{
-            await getUpdatedPrices(data[0])
-            data[0].favorites = await getFavoriteCount(data[0].id)
+            cardData = data
+            cardError = error
+
         }
 
-        return data;
+        if (cardError) {
+            console.log(cardError)
+        }else{
+            if(cardData.length > 0){
+                cardData[0].favorites = await getFavoriteCount(cardData[0].id)
+                if(!req.params.cardID.startsWith("custom-")){
+                    await getUpdatedPrices(cardData[0])
+                }
+            }
+        }
+
+        return cardData
 
     },
 
