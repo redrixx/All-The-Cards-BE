@@ -11,6 +11,7 @@ const supabase = createClient(
 
 // Table References
 const atcMaster = 'atc_cards_master'
+const atcCustom = 'atc_cards_custom'
 const decksMaster = 'atc_decks_master'
 const deckMaster = 'atc_deck_master'
 const usersMaster = 'atc_users_master'
@@ -40,20 +41,39 @@ async function getUsername(id) {
 
 }
 
-// Helper Function For Getting Cards
+// Helper Function For Getting Deck Cards
 async function getCard(cardID) {
 
-    let { data, error } = await supabase
-        .from(atcMaster)
-        .select('id, name')
+    var cardData, cardError
+
+    if(cardID && cardID.startsWith("custom-")){
+
+        let { data, error } = await supabase
+        .from(atcCustom)
+        .select()
         .eq('id', cardID)
 
-    if (error) {
-        console.log(error)
+        cardData = data
+        cardError = error
+
+    }else{
+
+        let { data, error } = await supabase
+        .from(atcMaster)
+        .select()
+        .eq('id', cardID)
+
+        cardData = data
+        cardError = error
+
+    }
+
+    if (cardError) {
+        console.log(cardError)
         return
     }
 
-    return data[0]
+    return cardData[0]
 
 }
 
@@ -72,6 +92,29 @@ async function cardSearch(cardName) {
     }
 
     return data
+
+}
+
+// Helper Function For Checking If Custom Cards Are In A Deck
+async function checkContainsCustom(deckID) {
+
+    let { data, error } = await supabase
+        .from(decksMaster)
+        .select()
+        .eq('deck_id', deckID)
+        .ilike('card_id', "custom-%")
+
+
+    if (error) {
+        console.log(error)
+        return
+    }
+
+    if(data.length > 0){
+        return true
+    }
+
+    return false
 
 }
 
@@ -118,21 +161,30 @@ module.exports = {
     // Recent Deck Search Query
     // 
     // Returns: recent decks - deck_id, name, cover_art, user_id, user_name, created
+    // Update: 11/17/22 - Now filters out decks with custom cards. Also returns 20 most recent vs 6 most recent.
     getRecentDecks: async function (req) {
 
         let { data, error } = await supabase
             .from(deckMaster)
             .select()
             .order('created', { ascending: false })
-            .limit(6)
+            .limit()
 
         if (error) {
             console.log(error)
             return
         }
 
-        for (let i = 0; i < data.length; i++) {
-            data[i].user_name = await getUsername(data[i].user_id)
+        for(var deck in data){
+            if(await checkContainsCustom(data[deck].id)){
+                data.splice(deck, 1)
+            }
+        }
+
+        data = data.slice(0,20)
+
+        for (var deck in data) {
+            data[deck].user_name = await getUsername(data[deck].user_id)
         }
 
         return data
@@ -151,17 +203,22 @@ module.exports = {
         }else{
 
             cardData = await getCard(req.headers.cardid)
-            if(cardData) { if(cardData.length === 0) { response = {Error: "An unexpected error occured during retrieval."}; return response } }
+            if(cardData) { if(cardData.length === 0) { response = {Error: "An unexpected error occured during top deck retrieval."}; return response } }
 
             if(!cardData){
 
-                response = {Error: "An unexpected error occured during retrieval."}
+                response = {Error: "An unexpected error occured during top deck retrieval."}
                 return response
 
             }else{
                 
+                var nameResults = []
                 // Retrieve all variants of the same card by name
-                nameResults = await cardSearch(cardData.name)
+                if(cardData.id.startsWith("custom-")){
+                    nameResults[0] = cardData
+                }else{
+                    nameResults = await cardSearch(cardData.name)
+                }
                 
                 // Concat query string with all variants
                 var deckResults = []

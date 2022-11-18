@@ -61,7 +61,7 @@ async function getCardsAdvanced(deckID){
 
 }
 
-// Helper Function For Getting Deck Cards
+// Helper Function For Getting Deck Cards - DEPRECATED, TO BE REMOVED
 async function getDeckCards(deckID) {
 
     results = []
@@ -178,6 +178,29 @@ async function getCoverCard(cardURL, data) {
 
 }
 
+// Helper Function For Checking If Custom Cards Are In A Deck
+async function checkContainsCustom(deckID) {
+
+    let { data, error } = await supabase
+        .from(decksMaster)
+        .select()
+        .eq('deck_id', deckID)
+        .ilike('card_id', "custom-%")
+
+
+    if (error) {
+        console.log(error)
+        return
+    }
+
+    if(data.length > 0){
+        return true
+    }
+
+    return false
+
+}
+
 
 module.exports = {
 
@@ -279,6 +302,7 @@ module.exports = {
         }
 
         for (var entry in data){
+            data[entry].containsCustom = await checkContainsCustom(data[entry].id)
             data[entry].user_name = await getUsername(data[entry].user_id)
         }
 
@@ -420,7 +444,7 @@ module.exports = {
 
     // Deck Editor Retrieve wipDeck
     // 
-    // Returns: Formatted wipDeck
+    // Returns: Formatted wipDeck   -   DEPRECATED, TO BE REMOVED
     editDeck: async function (req) {
 
         var response = {

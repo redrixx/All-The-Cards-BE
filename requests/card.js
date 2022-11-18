@@ -146,6 +146,10 @@ module.exports = {
             cardData = data
             cardError = error
 
+            if(!cardData[0].isApproved){
+                return {Message : "This card is currently pending approval. Please check back later."}
+            }
+
         }else{
 
             let { data, error } = await supabase
@@ -175,30 +179,47 @@ module.exports = {
 
     // Basic Card Search Query
     // 
-    // Returns: id, name, image_uris, color_identity, set_shorthand, set_type, card_faces, layout, frame, promo, lang, border_color, frame_effects
+    // Returns: limitedData card object
     cardSearch: async function (req) {
 
-        const results = []
+        let results = []
 
         let { data, error } = await supabase
             .from(atcMaster)
             .select(limitedData)
             .ilike('name', '%' + req.params.queryCard + '%')
 
-        results[0] = data
-
         if (error) {
             console.log(error)
             return
         }
 
-        return results[0]
+        results = data
+
+        if(req.headers.includecustom && req.headers.includecustom === 'true'){
+
+            let { data, error } = await supabase
+            .from(atcCustom)
+            .select()
+            .ilike('name', '%' + req.params.queryCard + '%')
+            .eq('isApproved', true)
+
+            if (error) {
+                console.log(error)
+                return
+            }
+
+            for(var record in data){results.push(data[record])}
+
+        }
+
+        return results
 
     },
 
     // Advanced Card Search Query
     // 
-    // Returns: id, name, image_uris, color_identity, set_shorthand, set_type, card_faces, layout, frame, promo, lang, border_color, frame_effects
+    // Returns: limitedData card object
     cardSearchAdvanced: async function (req) {
 
         const allQuery = {
@@ -225,7 +246,7 @@ module.exports = {
 
         //console.log(allQuery)
 
-        const results = []
+        var results = []
 
         const advancedParameters = {
             'artist': 'artist.ilike.*,artist.is.null',
@@ -307,10 +328,39 @@ module.exports = {
             }
         }
 
-        // "Best Case Scenario Search"
+        // The Big Boi Search
         let { data, error } = await supabase
-            .from(atcMaster)
-            .select(limitedData)
+        .from(atcMaster)
+        .select(limitedData)
+        .or(advancedParameters['artist'])
+        .or(advancedParameters['cmc'])
+        .or(advancedParameters['color_identity'])
+        .or(advancedParameters['colors'])
+        .or(advancedParameters['flavor_text'])
+        .or(advancedParameters['legalities'])
+        .ilike('name', '%' + allQuery.name + '%')
+        .or(advancedParameters['oracle_text'])
+        .or(advancedParameters['power'])
+        .ilike('rarity', allQuery.rarity)
+        .ilike('set_name', '%' + allQuery.set_name + '%')
+        .ilike('set_shorthand', allQuery.set_shorthand)
+        .or(advancedParameters['subtype_'])
+        .or(advancedParameters['toughness'])
+        .or(advancedParameters['type_'])
+
+        results = data
+
+        if (error) {
+            console.log(error)
+            return
+        }
+
+        if(req.headers.includecustom && req.headers.includecustom === 'true'){
+
+            // The Big Boi Search, but with custom cards
+            let { data, error } = await supabase
+            .from(atcCustom)
+            .select()
             .or(advancedParameters['artist'])
             .or(advancedParameters['cmc'])
             .or(advancedParameters['color_identity'])
@@ -326,16 +376,18 @@ module.exports = {
             .or(advancedParameters['subtype_'])
             .or(advancedParameters['toughness'])
             .or(advancedParameters['type_'])
+            .eq('isApproved', true)
 
-        results[0] = data
+            if (error) {
+                console.log(error)
+                return
+            }
 
-        if (error) {
-            console.log(error)
-            return
+            for(var record in data){results.push(data[record])}
+            
         }
 
-        //console.log('RECORDS : ' + data.length)
-        return results[0]
+        return results
 
     },
 
