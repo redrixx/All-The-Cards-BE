@@ -1,4 +1,5 @@
 // Imports
+const adminRequests = require('../requests/administrative.js')
 const cardRequests = require('../requests/card.js')
 const deckRequests = require('../requests/deck.js')
 const featureRequests = require('../requests/features.js')
@@ -66,15 +67,6 @@ router.post('/features/topthree/decks', async function (req, res, next) {
 router.post('/features/editor/decks', async function (req, res, next) {
 
   res.json(await deckRequests.createDeck(req))
-
-});
-
-
-// Deck Editor Retrieve
-router.post('/features/editor/retrieve', async function (req, res, next) {
-
-  //res.json(await deckRequests.editDeck(req))
-  res.json({Message: "This function has been deprecated."})
 
 });
 
@@ -164,6 +156,14 @@ router.delete('/features/user/delete', async function (req, res, next) {
 router.post('/features/user/favorite', async function (req, res, next) {
 
   res.json(await userRequests.updateFavorites(req))
+
+});
+
+
+// Administrative Calls
+router.post('/administrative', async function (req, res, next) {
+
+  res.json(await adminRequests.handleAdmin(req))
 
 });
 

@@ -336,6 +336,13 @@ module.exports = {
     // Returns: Message or Error
     createDeck: async function (req) {
 
+        // // Sample code for integrating prohibited phrase upload to supabase.
+        // if(true){
+        //     let { data, error } = await supabase.from('atc_admin_prohibited').select().contains('dictionary', [req.params.queryCard])
+        //     console.log(data)
+        //     if(data && data.length > 0){ console.log("PROHIBITED PHRASE SEARCHED") }
+        // }
+
         const payload = req.body
 
         var response = {}
@@ -345,9 +352,13 @@ module.exports = {
 
             // New Deck Creation
             date = new Date()
-            date = new Date(date.getTime() - date.getTimezoneOffset()*60000);
+            date = new Date(date.getTime() - date.getTimezoneOffset()*60000)
 
             if(!payload.authorID){ payload.authorID = 'anonymous' }
+
+            if(!payload.title){ return {Error: "Invalid deck title provided."} }
+            if(!payload.coverCard){ return {Error: "Invalid cover card provided."} }
+            if(!payload.formatTag){ return {Error: "Invalid format provided."} }
 
             const { data, error } = await supabase
                 .from(deckMaster)
@@ -377,7 +388,7 @@ module.exports = {
                     })
 
                     if(error){
-                        response = {Error: "An unexpected error occured during deck creation."}
+                        response = {Error: "An error occured during deck creation insertion."}
                         return response
                     }
 
@@ -389,6 +400,10 @@ module.exports = {
             }
 
         }else{
+
+            if(!payload.title){ return {Error: "Invalid deck title provided."} }
+            if(!payload.coverCard){ return {Error: "Invalid cover card provided."} }
+            if(!payload.formatTag){ return {Error: "Invalid format provided."} }
 
             // Existing Deck Edit
             const { data } = await supabase
@@ -424,98 +439,20 @@ module.exports = {
                     })
 
                     if(error){
-                        response = {Error: "An unexpected error occured during deck creation."}
+                        response = {Error: "An error occured during deck overwrite insertion."}
                         return response
                     }
 
                 }
 
             }else{
-                response = {Error: "An unexpected error occured during deck creation."}
+                response = {Error: "An unexpected error occured during deck overwrite."}
                 return response
             }
 
         }
 
         response = {Message: "Deck created successfully.", "URL" : `/api/get/deck/id=${deckURL}`}
-        return response
-
-    },
-
-    // Deck Editor Retrieve wipDeck
-    // 
-    // Returns: Formatted wipDeck   -   DEPRECATED, TO BE REMOVED
-    editDeck: async function (req) {
-
-        var response = {
-            deckID: null,
-            authorID: null,
-            coverCard: null,
-            description: null,
-            formatTag: null,
-            title: null,
-            tags: null,
-            cards: []
-        }
-
-        if(!req.headers.token){
-
-            response = {Error: "No token provided."}
-            return response
-            
-        }else{
-
-            const { data, error } = await supabase.auth.getUser(req.headers.token)
-            if(error){ response = {Error: "Invalid token provided."}; return response }
-            userData = data
-
-            if(!req.headers.deckid){
-
-                response = {Error: "Invalid deckID provided."}
-                return response
-    
-            }else{
-    
-                // Existing Deck Retrieval
-                const { data, error } = await supabase
-                    .from(deckMaster)
-                    .select()
-                    .eq('id', req.headers.deckid)
-                    .eq('user_id', userData.user.id)
-
-                const deckData = data
-    
-                if(error | !deckData | deckData.length === 0){
-    
-                    response = {Error: "An unexpected error occured during deck retrieval."}
-                    return response
-    
-                }else{
-    
-                    response.deckID = deckData[0].id
-                    response.authorID = deckData[0].user_id
-                    response.coverCard = await cardRequests.getLimitedCard(deckData[0].cover_art.slice(deckData[0].cover_art.lastIndexOf('/') + 1, deckData[0].cover_art.lastIndexOf('.')))
-                    response.description = deckData[0].description
-                    response.formatTag = deckData[0].format
-                    response.title = deckData[0].name
-                    response.tags = deckData[0].tags
-    
-                    const{ data } = await supabase
-                        .from(decksMaster)
-                        .select()
-                        .eq('deck_id', response.deckID)
-                        .select('card_id')
-    
-                    for(var card in data){
-                        response.cards.push(await cardRequests.getLimitedCard(data[card].card_id))
-                    }
-    
-                }
-    
-            }
-
-        }
-
         return response
 
     },
