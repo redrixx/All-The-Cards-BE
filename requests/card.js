@@ -1,5 +1,6 @@
 // Imports
 var fs = require('fs')
+const atc = require('../references/atc.json')
 
 // Database Access
 const { createClient } = require('@supabase/supabase-js')
@@ -11,15 +12,6 @@ const superbase = createClient(
     process.env.SUPABASE_URL,
     process.env.SERVICE_KEY
 )
-
-// Database References
-const limitedData = 'id, name, artist, border_color, card_faces, cmc, color_identity, colors, digital, finishes, flavor_text, frame, frame_effects, full_art, games, image_uris, lang, layout, legalities, mana_cost, oracle_text, power, prices, produced_mana, promo, rarity, released_at, set_name, set_shorthand, set_type, toughness, type_one, type_two, subtype_one, subtype_two, mtgo_id, tcgplayer_id'
-const atcMaster = 'atc_cards_master'
-const atcCustom = 'atc_cards_custom'
-const decksMaster = 'atc_decks_master'
-const deckMaster = 'atc_deck_master'
-const usersMaster = 'atc_users_master'
-const atcStorage = 'atc-custom'
 
 // Helper function for advanced search's color_identity requirements
 function getCombinations(array) {
@@ -57,22 +49,22 @@ async function importCardArt(art_crop, png){
 
     if(art_crop){
         
-        const { error } = await superbase.storage.from(atcStorage).upload(art_crop[0].path, fs.readFileSync(art_crop[0].path), {contentType: art_crop[0].mimetype})
+        const { error } = await superbase.storage.from(atc.atcStorage).upload(art_crop[0].path, fs.readFileSync(art_crop[0].path), {contentType: art_crop[0].mimetype})
         if(error){
             return {Error: "An unexpected error occured during art_crop file upload."}
         }
-        const { data } = superbase.storage.from(atcStorage).getPublicUrl(`storage/cards/${art_crop[0].filename}`)
+        const { data } = superbase.storage.from(atc.atcStorage).getPublicUrl(`storage/cards/${art_crop[0].filename}`)
         art_url = data.publicUrl
 
     }
 
     if(png){
 
-        const { error } = await superbase.storage.from(atcStorage).upload(png[0].path, fs.readFileSync(png[0].path), {contentType: png[0].mimetype})
+        const { error } = await superbase.storage.from(atc.atcStorage).upload(png[0].path, fs.readFileSync(png[0].path), {contentType: png[0].mimetype})
         if(error){
             return {Error: "An unexpected error occured during png file upload."}
         }
-        const { data } = superbase.storage.from(atcStorage).getPublicUrl(`storage/cards/${png[0].filename}`)
+        const { data } = superbase.storage.from(atc.atcStorage).getPublicUrl(`storage/cards/${png[0].filename}`)
         png_url = data.publicUrl
 
     }
@@ -95,7 +87,7 @@ async function getFavoriteCount(cardID) {
     var results
 
     let { data, error } = await supabase
-        .from(usersMaster)
+        .from(atc.usersMaster)
         .select('id, username')
         .ilike('favorites->>cards', `%${cardID}%` )
 
@@ -116,8 +108,8 @@ module.exports = {
     getLimitedCard: async function (cardID){
 
         let { data, error } = await supabase
-            .from(atcMaster)
-            .select(limitedData)
+            .from(atc.atcMaster)
+            .select(atc.limitedData)
             .eq('id', cardID)
 
         if (error) {
@@ -139,7 +131,7 @@ module.exports = {
         if(req.params.cardID && req.params.cardID.startsWith("custom-")){
 
             let { data, error } = await supabase
-            .from(atcCustom)
+            .from(atc.atcCustom)
             .select()
             .eq('id', req.params.cardID)
 
@@ -153,7 +145,7 @@ module.exports = {
         }else{
 
             let { data, error } = await supabase
-            .from(atcMaster)
+            .from(atc.atcMaster)
             .select()
             .eq('id', req.params.cardID)
 
@@ -185,8 +177,8 @@ module.exports = {
         let results = []
 
         let { data, error } = await supabase
-            .from(atcMaster)
-            .select(limitedData)
+            .from(atc.atcMaster)
+            .select(atc.limitedData)
             .ilike('name', '%' + req.params.queryCard + '%')
 
         if (error) {
@@ -199,7 +191,7 @@ module.exports = {
         if(req.headers.includecustom && req.headers.includecustom === 'true'){
 
             let { data, error } = await supabase
-            .from(atcCustom)
+            .from(atc.atcCustom)
             .select()
             .ilike('name', '%' + req.params.queryCard + '%')
             .eq('isApproved', true)
@@ -330,8 +322,8 @@ module.exports = {
 
         // The Big Boi Search
         let { data, error } = await supabase
-        .from(atcMaster)
-        .select(limitedData)
+        .from(atc.atcMaster)
+        .select(atc.limitedData)
         .or(advancedParameters['artist'])
         .or(advancedParameters['cmc'])
         .or(advancedParameters['color_identity'])
@@ -359,7 +351,7 @@ module.exports = {
 
             // The Big Boi Search, but with custom cards
             let { data, error } = await supabase
-            .from(atcCustom)
+            .from(atc.atcCustom)
             .select()
             .or(advancedParameters['artist'])
             .or(advancedParameters['cmc'])
@@ -413,7 +405,7 @@ module.exports = {
             if(cardImport.Error){return cardImport.Error}
 
             const { data, error } = await supabase
-                .from(atcCustom)
+                .from(atc.atcCustom)
                 .insert({
                     name: payload.name, 
                     author: payload.author, 
@@ -453,7 +445,7 @@ module.exports = {
 
         //     // Existing Card Edit
         //     const { data } = await supabase
-        //         .from(atcCustom)
+        //         .from(atc.atcCustom)
         //         .update({
         //             name: payload.title, 
         //             user_id: payload.authorID, 
@@ -466,7 +458,7 @@ module.exports = {
         //     }).eq('id', payload.deckID)
 
         //     const{ error } = await supabase
-        //     .from(atcCustom)
+        //     .from(atc.atcCustom)
         //     .delete()
         //     .eq('deck_id', payload.deckID)
         //     .then()
@@ -477,7 +469,7 @@ module.exports = {
 
         //         for(var card in payload.cards){
         //             const { error } = await supabase
-        //                 .from(atcCustom)
+        //                 .from(atc.atcCustom)
         //                 .insert({
         //                     card_id: payload.cards[card],
         //                     user_id: payload.authorID,

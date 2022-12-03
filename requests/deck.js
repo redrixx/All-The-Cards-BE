@@ -1,5 +1,6 @@
 // Imports
 const cardRequests = require('../requests/card.js')
+const atc = require('../references/atc.json')
 
 // Database Access
 const { createClient } = require('@supabase/supabase-js')
@@ -8,14 +9,6 @@ const supabase = createClient(
     process.env.API_KEY
 )
 
-// Database References
-const limitedData = 'id, name, artist, border_color, card_faces, cmc, color_identity, colors, digital, finishes, flavor_text, frame, frame_effects, full_art, games, image_uris, lang, layout, legalities, mana_cost, oracle_text, power, prices, produced_mana, promo, rarity, released_at, set_name, set_shorthand, set_type, toughness, type_one, type_two, subtype_one, subtype_two, mtgo_id, tcgplayer_id'
-const atcMaster = 'atc_cards_master'
-const atcCustom = 'atc_cards_custom'
-const decksMaster = 'atc_decks_master'
-const deckMaster = 'atc_deck_master'
-const usersMaster = 'atc_users_master'
-
 // Helper Function For Getting Deck Cards - Advanced Method
 async function getCardsAdvanced(deckID){
 
@@ -23,7 +16,7 @@ async function getCardsAdvanced(deckID){
     var results = []
     
     let { data, error } = await supabase
-    .from(decksMaster)
+    .from(atc.decksMaster)
     .select('card_id')
     .eq('deck_id', deckID)
     .order('card_id')
@@ -61,26 +54,6 @@ async function getCardsAdvanced(deckID){
 
 }
 
-// Helper Function For Getting Deck Cards - DEPRECATED, TO BE REMOVED
-async function getDeckCards(deckID) {
-
-    results = []
-
-    let { data, error } = await supabase
-        .from(decksMaster)
-        .select()
-        .eq('deck_id', deckID)
-
-    if (!error) {
-        for (var card=0, max=data.length; card < max; ++card){
-            results.push(await getCard(data[card].card_id))
-        }
-    }
-
-    return results
-
-}
-
 // Helper Function For Getting Deck Cards
 async function getCard(cardID) {
 
@@ -89,7 +62,7 @@ async function getCard(cardID) {
     if(cardID && cardID.startsWith("custom-")){
 
         let { data, error } = await supabase
-        .from(atcCustom)
+        .from(atc.atcCustom)
         .select()
         .eq('id', cardID)
 
@@ -99,7 +72,7 @@ async function getCard(cardID) {
     }else{
 
         let { data, error } = await supabase
-        .from(atcMaster)
+        .from(atc.atcMaster)
         .select()
         .eq('id', cardID)
 
@@ -120,7 +93,7 @@ async function getCard(cardID) {
 async function getUsername(id) {
 
     let { data, error } = await supabase
-        .from(usersMaster)
+        .from(atc.usersMaster)
         .select('username')
         .eq('id', id)
 
@@ -143,7 +116,7 @@ async function getFavoriteCount(deckID) {
     var results
 
     let { data, error } = await supabase
-        .from(usersMaster)
+        .from(atc.usersMaster)
         .select('id, username')
         .ilike('favorites->>decks', `%${deckID}%` )
 
@@ -162,7 +135,7 @@ async function getCoverCard(cardURL, data) {
 
     if(cardURL && cardURL.startsWith("https://pkzscplmxataclyrehsr.supabase.co")){
 
-        let { data, error } = await supabase.from(atcCustom).select().eq('image_uris->>art_crop', cardURL)
+        let { data, error } = await supabase.from(atc.atcCustom).select().eq('image_uris->>art_crop', cardURL)
 
         if(!error){
             coverCard = data[0]
@@ -182,7 +155,7 @@ async function getCoverCard(cardURL, data) {
 async function checkContainsCustom(deckID) {
 
     let { data, error } = await supabase
-        .from(decksMaster)
+        .from(atc.decksMaster)
         .select()
         .eq('deck_id', deckID)
         .ilike('card_id', "custom-%")
@@ -201,6 +174,34 @@ async function checkContainsCustom(deckID) {
 
 }
 
+// Helper Function For Validating Against Prohibited Table
+async function isProhibited(value) {
+
+    if(typeof value === 'string'){
+        value = value.split(/[/\s,.-]+/)
+        value = value.filter(n => n)
+    }else{
+        newvalue = []
+        for(var subvalue in value){
+            value[subvalue] = value[subvalue].split(/[/\s,.-]+/)
+            value[subvalue] = value[subvalue].filter(n => n)
+            for(var subsubvalue in value[subvalue]){
+                newvalue.push(value[subvalue][subsubvalue])
+            }
+        }
+        value = newvalue
+    }
+
+    //console.log(value)
+
+    for(var keyword in value){
+        let { data, error } = await supabase.from(atc.atcProhibited).select().contains('dictionary', [value[keyword].toLowerCase()])
+        if(data && data.length > 0){ console.log(`PROHIBITED WORD DETECTED: ${value[keyword]}`) }
+        if(data && data.length > 0){ return true }
+    }
+
+}
+
 
 module.exports = {
 
@@ -214,7 +215,7 @@ module.exports = {
         var favorites = []
 
         let { data, error } = await supabase
-            .from(deckMaster)
+            .from(atc.deckMaster)
             .select()
             .eq('id', req.params.deckID)
 
@@ -254,7 +255,7 @@ module.exports = {
         var results
 
         let { data, error } = await supabase
-            .from(usersMaster)
+            .from(atc.usersMaster)
             .select('id, username')
             .ilike('favorites->>decks', `%${deckID}%` )
 
@@ -272,7 +273,7 @@ module.exports = {
     decksByUser: async function (req) {
 
         let { data, error } = await supabase
-            .from(deckMaster)
+            .from(atc.deckMaster)
             .select()
             .eq('user_id', req.params.userID)
 
@@ -292,7 +293,7 @@ module.exports = {
     deckSearch: async function (req) {
 
         let { data, error } = await supabase
-            .from(deckMaster)
+            .from(atc.deckMaster)
             .select()
             .ilike('name', '%' + req.params.queryDeck + '%')
 
@@ -316,7 +317,7 @@ module.exports = {
     deckSearchByID: async function (deckID) {
 
         let { data, error } = await supabase
-            .from(deckMaster)
+            .from(atc.deckMaster)
             .select()
             .eq('id', deckID)
 
@@ -336,17 +337,20 @@ module.exports = {
     // Returns: Message or Error
     createDeck: async function (req) {
 
-        // // Sample code for integrating prohibited phrase upload to supabase.
-        // if(true){
-        //     let { data, error } = await supabase.from('atc_admin_prohibited').select().contains('dictionary', [req.params.queryCard])
-        //     console.log(data)
-        //     if(data && data.length > 0){ console.log("PROHIBITED PHRASE SEARCHED") }
-        // }
-
         const payload = req.body
 
         var response = {}
         var deckURL
+
+        // Field Validation Checks
+        if(!payload.title){ return {Error: "No deck title provided."} }
+        if(!payload.coverCard){ return {Error: "No cover card provided."} }
+        if(!payload.formatTag){ return {Error: "No format provided."} }
+
+        // Prohibited Validation Check
+        if(await isProhibited(payload.title)) { return { Error: "There is a prohibited word in the deck title." } }
+        if(await isProhibited(payload.description)) { return { Error: "There is a prohibited word in the deck description." } }
+        if(await isProhibited(payload.tags)) { return { Error: "There is a prohibited word in the deck tags." } }
 
         if(payload.deckID === null | payload.deckID === ""){
 
@@ -356,12 +360,8 @@ module.exports = {
 
             if(!payload.authorID){ payload.authorID = 'anonymous' }
 
-            if(!payload.title){ return {Error: "Invalid deck title provided."} }
-            if(!payload.coverCard){ return {Error: "Invalid cover card provided."} }
-            if(!payload.formatTag){ return {Error: "Invalid format provided."} }
-
             const { data, error } = await supabase
-                .from(deckMaster)
+                .from(atc.deckMaster)
                 .insert({
                     name: payload.title, 
                     user_id: payload.authorID, 
@@ -380,7 +380,7 @@ module.exports = {
 
                 for(var card in payload.cards){
                     const { error } = await supabase
-                        .from(decksMaster)
+                        .from(atc.decksMaster)
                         .insert({
                             card_id: payload.cards[card],
                             user_id: payload.authorID,
@@ -401,13 +401,9 @@ module.exports = {
 
         }else{
 
-            if(!payload.title){ return {Error: "Invalid deck title provided."} }
-            if(!payload.coverCard){ return {Error: "Invalid cover card provided."} }
-            if(!payload.formatTag){ return {Error: "Invalid format provided."} }
-
             // Existing Deck Edit
             const { data } = await supabase
-                .from(deckMaster)
+                .from(atc.deckMaster)
                 .update({
                     name: payload.title, 
                     user_id: payload.authorID, 
@@ -420,7 +416,7 @@ module.exports = {
             }).eq('id', payload.deckID)
 
             const{ error } = await supabase
-            .from(decksMaster)
+            .from(atc.decksMaster)
             .delete()
             .eq('deck_id', payload.deckID)
             .then()
@@ -431,7 +427,7 @@ module.exports = {
 
                 for(var card in payload.cards){
                     const { error } = await supabase
-                        .from(decksMaster)
+                        .from(atc.decksMaster)
                         .insert({
                             card_id: payload.cards[card],
                             user_id: payload.authorID,
@@ -484,7 +480,7 @@ module.exports = {
     
                 // Existing Deck Check
                 const { data, error } = await supabase
-                    .from(deckMaster)
+                    .from(atc.deckMaster)
                     .select()
                     .eq('id', req.headers.deckid)
                     .eq('user_id', userData.user.id)
@@ -502,19 +498,19 @@ module.exports = {
     
                     // Deletion at the Deck Cards Level
                     const{} = await supabase
-                        .from(decksMaster)
+                        .from(atc.decksMaster)
                         .delete()
                         .eq('deck_id', req.headers.deckid)
 
                     // Deletion at the Deck Header Level
                     const{} = await supabase
-                        .from(deckMaster)
+                        .from(atc.deckMaster)
                         .delete()
                         .eq('id', req.headers.deckid)
 
                     // Deletion at the Deck Favorites Level
                     const{data, error} = await supabase
-                        .from(usersMaster)
+                        .from(atc.usersMaster)
                         .select('id, favorites')
                         .ilike('favorites->>decks', `%${req.headers.deckid}%`)
 
@@ -522,7 +518,7 @@ module.exports = {
 
                         data[entry].favorites.decks = data[entry].favorites.decks.filter(e => e !== req.headers.deckid)
                         const { error } = await supabase
-                        .from(usersMaster)
+                        .from(atc.usersMaster)
                         .update({ 'favorites' : data[entry].favorites })
                         .eq('id', data[entry].id)
 

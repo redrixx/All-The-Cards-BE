@@ -1,6 +1,7 @@
 // Imports
 const cardRequests = require('../requests/card.js')
 const deckRequests = require('../requests/deck.js')
+const atc = require('../references/atc.json')
 
 // Database Access
 const { createClient } = require('@supabase/supabase-js')
@@ -8,13 +9,6 @@ const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.API_KEY
 )
-
-// Table References
-const atcMaster = 'atc_cards_master'
-const atcCustom = 'atc_cards_custom'
-const decksMaster = 'atc_decks_master'
-const deckMaster = 'atc_deck_master'
-const usersMaster = 'atc_users_master'
 
 // Helper function for getting a username
 async function getUsername(id) {
@@ -26,7 +20,7 @@ async function getUsername(id) {
     }else{
 
     let { data, error } = await supabase
-        .from(usersMaster)
+        .from(atc.usersMaster)
         .select('username')
         .eq('id', id)
 
@@ -49,7 +43,7 @@ async function getCard(cardID) {
     if(cardID && cardID.startsWith("custom-")){
 
         let { data, error } = await supabase
-        .from(atcCustom)
+        .from(atc.atcCustom)
         .select()
         .eq('id', cardID)
 
@@ -59,7 +53,7 @@ async function getCard(cardID) {
     }else{
 
         let { data, error } = await supabase
-        .from(atcMaster)
+        .from(atc.atcMaster)
         .select()
         .eq('id', cardID)
 
@@ -81,7 +75,7 @@ async function getCard(cardID) {
 async function cardSearch(cardName) {
 
     let { data, error } = await supabase
-        .from(atcMaster)
+        .from(atc.atcMaster)
         .select('id, name')
         .eq('name', cardName)
 
@@ -99,7 +93,7 @@ async function cardSearch(cardName) {
 async function checkContainsCustom(deckID) {
 
     let { data, error } = await supabase
-        .from(decksMaster)
+        .from(atc.decksMaster)
         .select()
         .eq('deck_id', deckID)
         .ilike('card_id', "custom-%")
@@ -135,7 +129,7 @@ module.exports = {
         while (!validArt) {
 
             let { data, error } = await supabase
-                .from(atcMaster)
+                .from(atc.atcMaster)
                 .select('image_uris')
                 .ilike('name', '%' + id + '%')
                 .limit(100)
@@ -165,7 +159,7 @@ module.exports = {
     getRecentDecks: async function (req) {
 
         let { data, error } = await supabase
-            .from(deckMaster)
+            .from(atc.deckMaster)
             .select()
             .order('created', { ascending: false })
             .limit()
@@ -231,7 +225,7 @@ module.exports = {
                 // The query string is searched against the deck-cards table,
                 // then unique-ified by deckIDs.
                 let { data } = await supabase
-                .from(decksMaster)
+                .from(atc.decksMaster)
                 .select('deck_id')
                 .or(searchQuery)
                 deckResults = [... new Set(data.map(JSON.stringify))].map(JSON.parse)

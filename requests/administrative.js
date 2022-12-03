@@ -1,5 +1,5 @@
 // Database Access
-const atcMaster = 'atc_cards_master'
+const atc = require('../references/atc.json')
 const { createClient } = require('@supabase/supabase-js')
 const superbase = createClient(
     process.env.SUPABASE_URL,
@@ -9,7 +9,7 @@ const superbase = createClient(
 // Sub-Function Call for updating prices.
 async function performPriceUpdate(cardID, response){
 
-    let { data } = await superbase.from(atcMaster).select('id, prices').eq('id', cardID)
+    let { data } = await superbase.from(atc.atcMaster).select('id, prices').eq('id', cardID)
     var cardData
 
     if(data && data.length > 0){
@@ -25,7 +25,7 @@ async function performPriceUpdate(cardID, response){
                 cardData.prices = json.prices
         })
 
-        let { error } = await superbase.from(atcMaster).update({prices: cardData.prices}).eq('id', cardID)
+        let { error } = await superbase.from(atc.atcMaster).update({prices: cardData.prices}).eq('id', cardID)
 
         if(error){ return {Error: "An unexpected error occured during pricing update."}}
 
@@ -42,7 +42,7 @@ async function performPriceUpdate(cardID, response){
 // Sub-Function Call for updating legalities.
 async function performLegalityUpdate(cardID, response){
 
-    let { data } = await superbase.from(atcMaster).select('id, legalities').eq('id', cardID)
+    let { data } = await superbase.from(atc.atcMaster).select('id, legalities').eq('id', cardID)
     var cardData
 
     if(data && data.length > 0){
@@ -58,7 +58,7 @@ async function performLegalityUpdate(cardID, response){
                 cardData.legalities = json.legalities
         })
 
-        let { error } = await superbase.from(atcMaster).update({legalities: cardData.legalities}).eq('id', cardID)
+        let { error } = await superbase.from(atc.atcMaster).update({legalities: cardData.legalities}).eq('id', cardID)
 
         if(error){ return {Error: "An unexpected error occured during legality update."}}
 
@@ -97,7 +97,7 @@ async function updatePrices(req){
 
     }else{
 
-        // All Cards Will Be Updated
+        response = {Error: "No target provided."}
 
     }
 
@@ -130,7 +130,7 @@ async function updateLegalities(req){
 
     }else{
 
-        // All Cards Will Be Updated
+        response = {Error: "No target provided."}
 
     }
 

@@ -1,3 +1,6 @@
+// Imports
+const atc = require('../references/atc.json')
+
 // Database Access
 const { createClient } = require('@supabase/supabase-js')
 const supabase = createClient(
@@ -8,12 +11,6 @@ const superbase = createClient(
     process.env.SUPABASE_URL,
     process.env.SERVICE_KEY
 )
-
-// Table References
-const atcMaster = 'atc_cards_master'
-const decksMaster = 'atc_decks_master'
-const deckMaster = 'atc_deck_master'
-const usersMaster = 'atc_users_master'
 
 // Helper function to validate emails...somewhat
 function validateEmail(email) {
@@ -30,7 +27,7 @@ module.exports = {
     getUserID: async function (req) {
 
         let { data, error } = await supabase
-            .from(usersMaster)
+            .from(atc.usersMaster)
             .select()
             .eq('id', req.params.userID)
 
@@ -53,7 +50,7 @@ module.exports = {
     userSearch: async function (req) {
 
         let { data, error } = await supabase
-            .from(usersMaster)
+            .from(atc.usersMaster)
             .select()
             .ilike('username', '%' + req.params.queryUser + '%')
 
@@ -121,7 +118,7 @@ module.exports = {
             }else{
 
                 const { error } = await supabase
-                    .from(usersMaster)
+                    .from(atc.usersMaster)
                     .update({username : req.body.username})
                     .eq('id', userData.user.id)
 
@@ -138,7 +135,7 @@ module.exports = {
             }else{
 
                 const { error } = await supabase
-                .from(usersMaster)
+                .from(atc.usersMaster)
                 .update({bio : req.body.bio})
                 .eq('id', userData.user.id)
 
@@ -155,7 +152,7 @@ module.exports = {
             }else{
 
                 const { error } = await supabase
-                .from(usersMaster)
+                .from(atc.usersMaster)
                 .update({name : req.body.name})
                 .eq('id', userData.user.id)
 
@@ -180,7 +177,7 @@ module.exports = {
             }else{
 
                 const { error } = await supabase
-                .from(usersMaster)
+                .from(atc.usersMaster)
                 .update({location : req.body.location})
                 .eq('id', userData.user.id)
 
@@ -197,7 +194,7 @@ module.exports = {
             }else{
 
                 const { error } = await supabase
-                .from(usersMaster)
+                .from(atc.usersMaster)
                 .update({avatar : req.body.avatar})
                 .eq('id', userData.user.id)
 
@@ -238,7 +235,7 @@ module.exports = {
                 if(req.body.card){
 
                     const { data, error } = await supabase
-                        .from(usersMaster)
+                        .from(atc.usersMaster)
                         .select('favorites')
                         .eq('id', userData.user.id)
 
@@ -248,7 +245,7 @@ module.exports = {
 
                             data[0].favorites.cards = data[0].favorites.cards.filter(e => e !== req.body.card)
                             const { error } = await supabase
-                            .from(usersMaster)
+                            .from(atc.usersMaster)
                             .update({ 'favorites' : data[0].favorites })
                             .eq('id', userData.user.id)
 
@@ -258,7 +255,7 @@ module.exports = {
 
                             data[0].favorites.cards.push(req.body.card)
                             const { error } = await supabase
-                            .from(usersMaster)
+                            .from(atc.usersMaster)
                             .update({ 'favorites' : data[0].favorites })
                             .eq('id', userData.user.id)
 
@@ -273,7 +270,7 @@ module.exports = {
                 if(req.body.deck){
 
                     const { data, error } = await supabase
-                        .from(usersMaster)
+                        .from(atc.usersMaster)
                         .select('favorites')
                         .eq('id', userData.user.id)
 
@@ -283,7 +280,7 @@ module.exports = {
 
                             data[0].favorites.decks = data[0].favorites.decks.filter(e => e !== req.body.deck)
                             const { error } = await supabase
-                            .from(usersMaster)
+                            .from(atc.usersMaster)
                             .update({ 'favorites' : data[0].favorites })
                             .eq('id', userData.user.id)
 
@@ -293,7 +290,7 @@ module.exports = {
 
                             data[0].favorites.decks.push(req.body.deck)
                             const { error } = await supabase
-                            .from(usersMaster)
+                            .from(atc.usersMaster)
                             .update({ 'favorites' : data[0].favorites })
                             .eq('id', userData.user.id)
 
@@ -350,7 +347,7 @@ module.exports = {
 
                     }else{
 
-                        const { error } = await supabase.from(usersMaster).delete().eq('id', userData.user.id)
+                        const { error } = await supabase.from(atc.usersMaster).delete().eq('id', userData.user.id)
 
                     }
 
@@ -364,7 +361,7 @@ module.exports = {
 
                     }else{
 
-                        const { error } = await supabase.from(usersMaster).delete().eq('id', userData.user.id)
+                        const { error } = await supabase.from(atc.usersMaster).delete().eq('id', userData.user.id)
                         
                     }
 
