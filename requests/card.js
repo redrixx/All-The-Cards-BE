@@ -1,5 +1,6 @@
 // Imports
 var fs = require('fs')
+const atc = require('../references/atc.json')
 
 // Database Access
 const { createClient } = require('@supabase/supabase-js')
@@ -11,15 +12,6 @@ const superbase = createClient(
     process.env.SUPABASE_URL,
     process.env.SERVICE_KEY
 )
-
-// Database References
-const limitedData = 'id, name, artist, border_color, card_faces, cmc, color_identity, colors, digital, finishes, flavor_text, frame, frame_effects, full_art, games, image_uris, lang, layout, legalities, mana_cost, oracle_text, power, prices, produced_mana, promo, rarity, released_at, set_name, set_shorthand, set_type, toughness, type_one, type_two, subtype_one, subtype_two, mtgo_id, tcgplayer_id'
-const atcMaster = 'atc_cards_master'
-const atcCustom = 'atc_cards_custom'
-const decksMaster = 'atc_decks_master'
-const deckMaster = 'atc_deck_master'
-const usersMaster = 'atc_users_master'
-const atcStorage = 'atc-custom'
 
 // Helper function for advanced search's color_identity requirements
 function getCombinations(array) {
@@ -57,22 +49,22 @@ async function importCardArt(art_crop, png){
 
     if(art_crop){
         
-        const { error } = await superbase.storage.from(atcStorage).upload(art_crop[0].path, fs.readFileSync(art_crop[0].path), {contentType: art_crop[0].mimetype})
+        const { error } = await superbase.storage.from(atc.atcStorage).upload(art_crop[0].path, fs.readFileSync(art_crop[0].path), {contentType: art_crop[0].mimetype})
         if(error){
             return {Error: "An unexpected error occured during art_crop file upload."}
         }
-        const { data } = superbase.storage.from(atcStorage).getPublicUrl(`storage/cards/${art_crop[0].filename}`)
+        const { data } = superbase.storage.from(atc.atcStorage).getPublicUrl(`storage/cards/${art_crop[0].filename}`)
         art_url = data.publicUrl
 
     }
 
     if(png){
 
-        const { error } = await superbase.storage.from(atcStorage).upload(png[0].path, fs.readFileSync(png[0].path), {contentType: png[0].mimetype})
+        const { error } = await superbase.storage.from(atc.atcStorage).upload(png[0].path, fs.readFileSync(png[0].path), {contentType: png[0].mimetype})
         if(error){
             return {Error: "An unexpected error occured during png file upload."}
         }
-        const { data } = superbase.storage.from(atcStorage).getPublicUrl(`storage/cards/${png[0].filename}`)
+        const { data } = superbase.storage.from(atc.atcStorage).getPublicUrl(`storage/cards/${png[0].filename}`)
         png_url = data.publicUrl
 
     }
@@ -89,6 +81,25 @@ async function importCardArt(art_crop, png){
 }
 
 
+// Helper Function For Getting Card Cards
+async function getFavoriteCount(cardID) {
+
+    var results
+
+    let { data, error } = await supabase
+        .from(atc.usersMaster)
+        .select('id, username')
+        .ilike('favorites->>cards', `%${cardID}%` )
+
+    if (!error) {
+        results = data.length
+    }
+
+    return results
+
+}
+
+
 module.exports = {
 
     // Limited Data Card By ID
@@ -97,8 +108,8 @@ module.exports = {
     getLimitedCard: async function (cardID){
 
         let { data, error } = await supabase
-            .from(atcMaster)
-            .select(limitedData)
+            .from(atc.atcMaster)
+            .select(atc.limitedData)
             .eq('id', cardID)
 
         if (error) {
@@ -115,47 +126,92 @@ module.exports = {
     // Returns: Entire Card Object
     getCardID: async function (req) {
 
-        let { data, error } = await supabase
-            .from(atcMaster)
+        var cardData, cardError
+
+        if(req.params.cardID && req.params.cardID.startsWith("custom-")){
+
+            let { data, error } = await supabase
+            .from(atc.atcCustom)
             .select()
             .eq('id', req.params.cardID)
 
-        if (error) {
-            console.log(error)
+            cardData = data
+            cardError = error
+
+            if(!cardData[0].isApproved){
+                return {Message : "This card is currently pending approval. Please check back later."}
+            }
+
         }else{
-            await getUpdatedPrices(data[0])
+
+            let { data, error } = await supabase
+            .from(atc.atcMaster)
+            .select()
+            .eq('id', req.params.cardID)
+
+            cardData = data
+            cardError = error
+
         }
 
-        return data;
+        if (cardError) {
+            console.log(cardError)
+        }else{
+            if(cardData.length > 0){
+                cardData[0].favorites = await getFavoriteCount(cardData[0].id)
+                if(!req.params.cardID.startsWith("custom-")){
+                    await getUpdatedPrices(cardData[0])
+                }
+            }
+        }
+
+        return cardData
 
     },
 
     // Basic Card Search Query
     // 
-    // Returns: id, name, image_uris, color_identity, set_shorthand, set_type, card_faces, layout, frame, promo, lang, border_color, frame_effects
+    // Returns: limitedData card object
     cardSearch: async function (req) {
 
-        const results = []
+        let results = []
 
         let { data, error } = await supabase
-            .from(atcMaster)
-            .select(limitedData)
+            .from(atc.atcMaster)
+            .select(atc.limitedData)
             .ilike('name', '%' + req.params.queryCard + '%')
-
-        results[0] = data
 
         if (error) {
             console.log(error)
             return
         }
 
-        return results[0]
+        results = data
+
+        if(req.headers.includecustom && req.headers.includecustom === 'true'){
+
+            let { data, error } = await supabase
+            .from(atc.atcCustom)
+            .select()
+            .ilike('name', '%' + req.params.queryCard + '%')
+            .eq('isApproved', true)
+
+            if (error) {
+                console.log(error)
+                return
+            }
+
+            for(var record in data){results.push(data[record])}
+
+        }
+
+        return results
 
     },
 
     // Advanced Card Search Query
     // 
-    // Returns: id, name, image_uris, color_identity, set_shorthand, set_type, card_faces, layout, frame, promo, lang, border_color, frame_effects
+    // Returns: limitedData card object
     cardSearchAdvanced: async function (req) {
 
         const allQuery = {
@@ -182,7 +238,7 @@ module.exports = {
 
         //console.log(allQuery)
 
-        const results = []
+        var results = []
 
         const advancedParameters = {
             'artist': 'artist.ilike.*,artist.is.null',
@@ -264,10 +320,39 @@ module.exports = {
             }
         }
 
-        // "Best Case Scenario Search"
+        // The Big Boi Search
         let { data, error } = await supabase
-            .from(atcMaster)
-            .select(limitedData)
+        .from(atc.atcMaster)
+        .select(atc.limitedData)
+        .or(advancedParameters['artist'])
+        .or(advancedParameters['cmc'])
+        .or(advancedParameters['color_identity'])
+        .or(advancedParameters['colors'])
+        .or(advancedParameters['flavor_text'])
+        .or(advancedParameters['legalities'])
+        .ilike('name', '%' + allQuery.name + '%')
+        .or(advancedParameters['oracle_text'])
+        .or(advancedParameters['power'])
+        .ilike('rarity', allQuery.rarity)
+        .ilike('set_name', '%' + allQuery.set_name + '%')
+        .ilike('set_shorthand', allQuery.set_shorthand)
+        .or(advancedParameters['subtype_'])
+        .or(advancedParameters['toughness'])
+        .or(advancedParameters['type_'])
+
+        results = data
+
+        if (error) {
+            console.log(error)
+            return
+        }
+
+        if(req.headers.includecustom && req.headers.includecustom === 'true'){
+
+            // The Big Boi Search, but with custom cards
+            let { data, error } = await supabase
+            .from(atc.atcCustom)
+            .select()
             .or(advancedParameters['artist'])
             .or(advancedParameters['cmc'])
             .or(advancedParameters['color_identity'])
@@ -283,16 +368,18 @@ module.exports = {
             .or(advancedParameters['subtype_'])
             .or(advancedParameters['toughness'])
             .or(advancedParameters['type_'])
+            .eq('isApproved', true)
 
-        results[0] = data
+            if (error) {
+                console.log(error)
+                return
+            }
 
-        if (error) {
-            console.log(error)
-            return
+            for(var record in data){results.push(data[record])}
+            
         }
 
-        //console.log('RECORDS : ' + data.length)
-        return results[0]
+        return results
 
     },
 
@@ -318,7 +405,7 @@ module.exports = {
             if(cardImport.Error){return cardImport.Error}
 
             const { data, error } = await supabase
-                .from(atcCustom)
+                .from(atc.atcCustom)
                 .insert({
                     name: payload.name, 
                     author: payload.author, 
@@ -358,7 +445,7 @@ module.exports = {
 
         //     // Existing Card Edit
         //     const { data } = await supabase
-        //         .from(atcCustom)
+        //         .from(atc.atcCustom)
         //         .update({
         //             name: payload.title, 
         //             user_id: payload.authorID, 
@@ -371,7 +458,7 @@ module.exports = {
         //     }).eq('id', payload.deckID)
 
         //     const{ error } = await supabase
-        //     .from(atcCustom)
+        //     .from(atc.atcCustom)
         //     .delete()
         //     .eq('deck_id', payload.deckID)
         //     .then()
@@ -382,7 +469,7 @@ module.exports = {
 
         //         for(var card in payload.cards){
         //             const { error } = await supabase
-        //                 .from(atcCustom)
+        //                 .from(atc.atcCustom)
         //                 .insert({
         //                     card_id: payload.cards[card],
         //                     user_id: payload.authorID,
