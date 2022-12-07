@@ -80,6 +80,45 @@ async function importCardArt(art_crop, png){
 
 }
 
+// Helper function for removing old art from Supabase bucket.
+async function removeCardArt(payload, outdatedArt){
+
+    var artCrop, artPng
+    const { data, error } = await supabase.from(atc.atcCustom).select('image_uris').eq('id', payload.id)
+
+    if(data && data.length > 0){
+
+        outdatedArt.art_crop = data[0].image_uris.art_crop
+        outdatedArt.png = data[0].image_uris.png
+
+        artCrop = JSON.stringify(data[0].image_uris.art_crop).split("/atc-custom/")[1]
+        artPng = JSON.stringify(data[0].image_uris.png).split("/atc-custom/")[1]
+
+        artCrop = artCrop.substring(0, artCrop.length - 1)
+        artPng = artPng.substring(0, artPng.length - 1)
+
+    }
+
+    if(!error){
+
+        const { error } = await superbase.storage.from(atc.atcStorage).remove([artCrop])
+        if(!error){
+            const { error } = await superbase.storage.from(atc.atcStorage).remove([artPng])
+            if(error){
+                return {Error: "An unexpected error occured during outdated png file removal."}
+            }
+        }else{
+            return {Error: "An unexpected error occured during outdated art_crop file removal."}
+        }
+
+        return {Message: "Outdated card art has been removed successfully."}
+
+    }
+
+    return {Error: "An unexpected error occured during outdated card art removal."}
+
+}
+
 
 // Helper Function For Getting Card Cards
 async function getFavoriteCount(cardID) {
@@ -388,9 +427,20 @@ module.exports = {
     // Returns: Message or Error
     createCard: async function (req) {
 
+        if(!req.body.card){ return { Error: "There is no card data provided." }}
+        if(!req.files.art_crop | !req.files.png){ return { Error: "There is no card art data provided." }}
+
         const payload = JSON.parse(req.body.card)
 
+        if(!payload.name){return {Error: "There is no card name provided."} }
+        if(!payload.color_identity){return {Error: "There is no card color_identity provided."} }
+        if(!payload.colors){return {Error: "There is no card colors provided."} }
+        if(!payload.mana_cost){return {Error: "There is no card mana_cost provided."} }
+        if(!payload.rarity){return {Error: "There is no card rarity provided."} }
+        if(!payload.type_one){return {Error: "There is no card type_one provided."} }
+
         var response = {}
+        var outdatedArt = {}
         var cardURL
 
         if(payload.id === null | payload.id === ""){
@@ -402,7 +452,7 @@ module.exports = {
             if(!payload.author){ payload.author = 'anonymous' }
 
             var cardImport = await importCardArt(req.files.art_crop, req.files.png)
-            if(cardImport.Error){return cardImport.Error}
+            if(cardImport.Error){return cardImport}
 
             const { data, error } = await supabase
                 .from(atc.atcCustom)
@@ -439,59 +489,163 @@ module.exports = {
 
             }
 
+        }else{
+
+            var cardImport = await importCardArt(req.files.art_crop, req.files.png)
+            if(cardImport.Error){return cardImport}
+            var artCleanup = await removeCardArt(payload, outdatedArt)
+            if(artCleanup.Error){return artCleanup}
+
+            // Existing Card Edit
+            const { data, error } = await supabase
+            .from(atc.atcCustom)
+            .update({
+                name: payload.name,
+                border_color: payload.border_color,
+                cmc: payload.cmc,
+                color_identity: payload.color_identity,
+                colors: payload.colors,
+                flavor_text: payload.flavor_text,
+                frame_effects: payload.frame_effects,
+                image_uris: {art_crop: cardImport.art_url, png: cardImport.png_url},
+                mana_cost: payload.mana_cost,
+                oracle_text: payload.oracle_text,
+                power: payload.power,
+                produced_mana: payload.produced_mana,
+                rarity: payload.rarity,
+                toughness: payload.toughness,
+                type_one: payload.type_one,
+                subtype_one: payload.subtype_one,
+            }).eq('id', payload.id).eq('author', payload.author).select()
+
+            if(!error){
+                
+                cardURL = data[0].id
+
+            }else{
+
+                response = {Error: "An unexpected error occured during card overwrite."}
+                return response
+
+            }
+
+            // Deck Cover Art Fix
+            if(true){
+                const {data} = await supabase
+                .from(atc.deckMaster)
+                .select()
+                .eq('cover_art', outdatedArt.art_crop)
+    
+                for(var entry in data){
+    
+                    data[entry].cover_art = cardImport.art_url
+                    const { error } = await supabase
+                    .from(atc.deckMaster)
+                    .update({ 'cover_art' : cardImport.art_url })
+                    .eq('id', data[entry].id)
+    
+                }
+            }
+
         }
-
-        // }else{
-
-        //     // Existing Card Edit
-        //     const { data } = await supabase
-        //         .from(atc.atcCustom)
-        //         .update({
-        //             name: payload.title, 
-        //             user_id: payload.authorID, 
-        //             cover_art: (await getCard(payload.coverCard)).image_uris.art_crop, 
-        //             format: payload.formatTag, 
-        //             description: payload.description, 
-        //             tags: payload.tags,
-        //             commander: payload.commander,
-        //             isValid: payload.isValid
-        //     }).eq('id', payload.deckID)
-
-        //     const{ error } = await supabase
-        //     .from(atc.atcCustom)
-        //     .delete()
-        //     .eq('deck_id', payload.deckID)
-        //     .then()
-
-        //     if(!error){
-
-        //         cardURL = payload.id
-
-        //         for(var card in payload.cards){
-        //             const { error } = await supabase
-        //                 .from(atc.atcCustom)
-        //                 .insert({
-        //                     card_id: payload.cards[card],
-        //                     user_id: payload.authorID,
-        //                     deck_id: payload.deckID
-        //             })
-
-        //             if(error){
-        //                 response = {Error: "An unexpected error occured during card creation."}
-        //                 return response
-        //             }
-
-        //         }
-
-        //     }else{
-        //         response = {Error: "An unexpected error occured during card creation."}
-        //         return response
-        //     }
-
-        // }
 
         response = {Message: "Card created successfully.", "URL" : `/api/get/card/id=${cardURL}`}
         return response
+
+    },
+
+    // Card Editor Delete
+    // 
+    // Returns: Message or Error
+    deleteCard: async function (req) {
+
+        var response = {}
+
+        if(!req.headers.token){
+
+            response = {Error: "No token provided."}
+            return response
+            
+        }else{
+
+            const { data, error } = await supabase.auth.getUser(req.headers.token)
+            if(error){ response = {Error: "Invalid token provided."}; return response }
+            userData = data
+
+            if(!req.headers.cardid){
+
+                response = {Error: "Invalid cardID provided."}
+                return response
+
+            }else{
+
+                // Existing Card Check
+                const { data, error } = await supabase
+                .from(atc.atcCustom)
+                .select()
+                .eq('id', req.headers.cardid)
+                .eq('author', userData.user.id)
+
+                const cardData = data
+
+                if(cardData) { if(cardData.length === 0) { return { Error: "An unexpected error occured during card removal."}}}
+
+                if(!data | error | !cardData){
+
+                    return {Error: "An unexpected error occured during card removal."}
+
+                }else{  // Proceed with Deletion
+
+                    // Deletion at the Deck Cards Level
+                    const{} = await supabase
+                    .from(atc.decksMaster)
+                    .delete()
+                    .eq('card_id', req.headers.cardid)
+
+                    // Deck Cover Art Fix at the Deck Header Level - TO BE FULLY IMPLEMENTED
+                    if(false){
+
+                        const {data} = await supabase
+                        .from(atc.deckMaster)
+                        .select()
+                        .contains('cover_art', "https://pkzscplmxataclyrehsr.supabase.co")
+
+                        for(var entry in data){
+
+                            data[entry].cover_art = "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/0/9/0948e6dc-8af7-45d3-91de-a2aebee83e82.jpg?1559591784"
+                            const { error } = await supabase
+                            .from(atc.deckMaster)
+                            .update({ 'cover_art' : data[entry].cover_art })
+                            .eq('id', data[entry].id)
+
+                        }
+
+                    }
+
+                    // Deletion at the Card Favorites Level
+                    const{data, error} = await supabase
+                        .from(atc.usersMaster)
+                        .select('id, favorites')
+                        .ilike('favorites->>cards', `%${req.headers.cardid}%`)
+
+                    for(var entry in data){
+
+                        data[entry].favorites.cards = data[entry].favorites.cards.filter(e => e !== req.headers.cardid)
+                        const { error } = await supabase
+                        .from(atc.usersMaster)
+                        .update({ 'favorites' : data[entry].favorites })
+                        .eq('id', data[entry].id)
+
+                    }
+
+                }
+
+            }
+
+        response = {Message: "Card deletion successful."}
+        return response
+        
+        }
 
     },
 
