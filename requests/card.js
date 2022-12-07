@@ -119,6 +119,21 @@ async function removeCardArt(payload, outdatedArt){
 
 }
 
+// Helper function for retrieving current art from Supabase bucket.
+async function retrieveCardArt(cardID){
+
+    const { data, error } = await supabase.from(atc.atcCustom).select('image_uris').eq('id', cardID)
+
+    if(data && data.length > 0){
+
+        return { Data: data[0].image_uris.art_crop }
+
+    }
+
+    return { Error: "An unexpected error occured during card art retrieval." }
+
+}
+
 
 // Helper Function For Getting Card Cards
 async function getFavoriteCount(cardID) {
@@ -560,6 +575,7 @@ module.exports = {
     deleteCard: async function (req) {
 
         var response = {}
+        var outdatedArt = {}
 
         if(!req.headers.token){
 
@@ -602,13 +618,16 @@ module.exports = {
                     .delete()
                     .eq('card_id', req.headers.cardid)
 
-                    // Deck Cover Art Fix at the Deck Header Level - TO BE FULLY IMPLEMENTED
-                    if(false){
+                    // Deck Cover Art Fix at the Deck Header Level
+                    if(true){
+
+                        outdatedArt = await retrieveCardArt(req.headers.cardid)
+                        if(outdatedArt.Error) { return { Error: "An unexpected error occured during card art retrieval." } }
 
                         const {data} = await supabase
                         .from(atc.deckMaster)
                         .select()
-                        .contains('cover_art', "https://pkzscplmxataclyrehsr.supabase.co")
+                        .eq('cover_art', outdatedArt.Data)
 
                         for(var entry in data){
 
@@ -637,6 +656,12 @@ module.exports = {
                         .eq('id', data[entry].id)
 
                     }
+
+                    // Final Deletion at the Custom Card Record Level
+                    const{} = await supabase
+                    .from(atc.atcCustom)
+                    .delete()
+                    .eq('id', req.headers.cardid)
 
                 }
 
