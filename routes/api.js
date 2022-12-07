@@ -88,6 +88,14 @@ router.post('/features/editor/cards', upload.fields([{name: 'art_crop'}, {name: 
 });
 
 
+// Card Editor Delete
+router.delete('/features/editor/card-delete', async function (req, res, next) {
+
+  res.json(await cardRequests.deleteCard(req))
+
+});
+
+
 // Basic Deck Search Query
 router.post('/search/deck/query=:queryDeck', async function (req, res, next) {
 
