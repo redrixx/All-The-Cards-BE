@@ -223,6 +223,20 @@ module.exports = {
 
     },
 
+    // Cards by UserID Query
+    // 
+    // Returns: cards by given userID
+    cardsByUser: async function (req) {
+
+        let { data, error } = await supabase
+            .from(atc.atcCustom)
+            .select()
+            .eq('author', req.params.userID)
+
+        return data
+
+    },
+
     // Basic Card Search Query
     // 
     // Returns: limitedData card object

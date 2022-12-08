@@ -136,6 +136,14 @@ router.post('/get/decks/user_id=:userID', async function (req, res, next) {
 });
 
 
+// Cards by User Query
+router.post('/get/cards/user_id=:userID', async function (req, res, next) {
+
+  res.json(await cardRequests.cardsByUser(req))
+
+});
+
+
 // User ID Query
 router.post('/get/user/id=:userID', async function (req, res, next) {
 
