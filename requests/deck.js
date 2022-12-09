@@ -347,10 +347,14 @@ module.exports = {
         if(!payload.coverCard){ return {Error: "No cover card provided."} }
         if(!payload.formatTag){ return {Error: "No format provided."} }
 
+        var tempTitle = Object.assign({}, payload.title)
+        var tempDesc = Object.assign({}, payload.description)
+        var tempTags = Object.assign({}, payload.tags)
+
         // Prohibited Validation Check
-        if(await isProhibited(payload.title)) { return { Error: "There is a prohibited word in the deck title." } }
-        if(await isProhibited(payload.description)) { return { Error: "There is a prohibited word in the deck description." } }
-        if(await isProhibited(payload.tags)) { return { Error: "There is a prohibited word in the deck tags." } }
+        if(await isProhibited(tempTitle)) { return { Error: "There is a prohibited word in the deck title." } }
+        if(await isProhibited(tempDesc)) { return { Error: "There is a prohibited word in the deck description." } }
+        if(await isProhibited(tempTags)) { return { Error: "There is a prohibited word in the deck tags." } }
 
         if(payload.deckID === null | payload.deckID === ""){
 
