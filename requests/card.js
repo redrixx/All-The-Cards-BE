@@ -80,6 +80,17 @@ async function importCardArt(art_crop, png){
 
 }
 
+// Helper function for cleanup if there's an error
+async function cleaupStorage(){
+
+    const directory = "./storage/cards"
+    fs.readdirSync(directory).forEach(f => {
+        if(f !== ".gitkeep")
+            fs.rmSync(`${directory}/${f}`)
+    })
+
+}
+
 // Helper function for removing old art from Supabase bucket.
 async function removeCardArt(payload, outdatedArt){
 
@@ -456,17 +467,18 @@ module.exports = {
     // Returns: Message or Error
     createCard: async function (req) {
 
-        if(!req.body.card){ return { Error: "There is no card data provided." }}
-        if(!req.files.art_crop | !req.files.png){ return { Error: "There is no card art data provided." }}
+        if(!req.body.card){ await cleaupStorage(); return { Error: "There is no card data provided." }}
+        if(!req.files.art_crop ){ await cleaupStorage(); return { Error: "There is no card art data provided for art_crop." }}
+        if(!req.files.png){ await cleaupStorage(); return { Error: "There is no card art data provided for png." }}
 
         const payload = JSON.parse(req.body.card)
 
-        if(!payload.name){return {Error: "There is no card name provided."} }
-        if(!payload.color_identity){return {Error: "There is no card color_identity provided."} }
-        if(!payload.colors){return {Error: "There is no card colors provided."} }
-        if(!payload.mana_cost){return {Error: "There is no card mana_cost provided."} }
-        if(!payload.rarity){return {Error: "There is no card rarity provided."} }
-        if(!payload.type_one){return {Error: "There is no card type_one provided."} }
+        if(!payload.name){await cleaupStorage(); return {Error: "There is no card name provided."} }
+        if(!payload.color_identity){await cleaupStorage(); return {Error: "There is no card color_identity provided."} }
+        if(!payload.colors){await cleaupStorage(); return {Error: "There is no card colors provided."} }
+        // if(!payload.mana_cost){await cleaupStorage(); return {Error: "There is no card mana_cost provided."} }
+        if(!payload.rarity){await cleaupStorage(); return {Error: "There is no card rarity provided."} }
+        if(!payload.type_one){await cleaupStorage(); return {Error: "There is no card type_one provided."} }
 
         var response = {}
         var outdatedArt = {}
@@ -481,7 +493,7 @@ module.exports = {
             if(!payload.author){ payload.author = 'anonymous' }
 
             var cardImport = await importCardArt(req.files.art_crop, req.files.png)
-            if(cardImport.Error){return cardImport}
+            if(cardImport.Error){await cleaupStorage(); return cardImport}
 
             const { data, error } = await supabase
                 .from(atc.atcCustom)
@@ -518,14 +530,13 @@ module.exports = {
 
             }
 
-        }else{
+        }else{ // Existing Card Edit
 
             var cardImport = await importCardArt(req.files.art_crop, req.files.png)
-            if(cardImport.Error){return cardImport}
+            if(cardImport.Error){await cleaupStorage(); return cardImport}
             var artCleanup = await removeCardArt(payload, outdatedArt)
             if(artCleanup.Error){return artCleanup}
 
-            // Existing Card Edit
             const { data, error } = await supabase
             .from(atc.atcCustom)
             .update({
@@ -578,7 +589,7 @@ module.exports = {
 
         }
 
-        response = {Message: "Card created successfully.", "URL" : `/api/get/card/id=${cardURL}`}
+        response = {Message: "Card updated successfully.", "URL" : `/api/get/card/id=${cardURL}`}
         return response
 
     },
