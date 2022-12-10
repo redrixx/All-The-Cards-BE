@@ -26,7 +26,7 @@ Again, this is just the backend. This would not necessarily contain any features
 | --- | --- | --- | --- | --- |
 | **POST** | `/api/get/card/id=queryCard` | queryCard | URL | [card](#card-json)
 | **POST** | `/api/search/card/query=queryText` | queryText | URL | [[cardsLTD](#card-limited-json)]
-| **POST** | `/api/search/card/adv/query=?advancedQueryText` | [advancedQueryText](#card-limited-json) | PARAMS | [[cardsLTD](#card-limited-json)]
+| **POST** | `/api/search/card/adv/query=?advancedQueryText` | [advancedQueryText](#advanced-search) | PARAMS | [[cardsLTD](#card-limited-json)]
 
 ### Deck Requests
 | Method | Route | Parameter(s) | Parameter Type(s) | Returns |
@@ -39,9 +39,9 @@ Again, this is just the backend. This would not necessarily contain any features
 | Method | Route | Parameter(s) | Parameter Type(s) | Returns |
 | --- | --- | --- | --- | --- |
 | **POST** | `/api/get/user/id=queryUser` | queryUser | URL | [user](#user-json)
-| **POST** | `/api/search/user/query=queryText` | queryText | URL | [[users](#card-json)]
+| **POST** | `/api/search/user/query=queryText` | queryText | URL | [[users](#user-json)]
 | **POST** | `/api/get/cards/user_id=queryUser` | queryUser | URL | [[cardsLTD](#card-limited-json)]
-| **POST** | `/api/features/user/favorite` | token, deckID/cardID | HEADER, BODY | [[users](#card-json)]
+| **POST** | `/api/features/user/favorite` | token, deckID/cardID | HEADER, BODY | [[users](#user-json)]
 
 ### Object Examples
 #### Card JSON
