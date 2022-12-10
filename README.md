@@ -44,8 +44,8 @@ Again, this is just the backend. This would not necessarily contain any features
 | **POST** | `/api/features/user/favorite` | token, deckID/cardID | HEADER, BODY | [[users](#card-json)]
 
 ### Object Examples
-#### <details><summary>Card JSON</summary>
-
+#### Card JSON
+<details>
 ```json
 {
 	"id": "d1129585-6d59-4217-9404-747a100f1e8c",
@@ -169,10 +169,10 @@ Again, this is just the backend. This would not necessarily contain any features
 }
 ```
 
-#### </details>
+</details>
 
-#### <details><summary>Deck JSON</summary>
-
+#### Deck JSON
+<details>
 ```json
 {
 	"deck_id": "4e331898-c5d5-4b63-9771-0e103832c33e",
@@ -1259,10 +1259,10 @@ Again, this is just the backend. This would not necessarily contain any features
 }
 ```
 
-#### </details>
+</details>
 
-#### <details><summary>Card Limited JSON</summary>
-
+#### Card Limited JSON
+<details>
 ```json
 {
 	"id": "d1129585-6d59-4217-9404-747a100f1e8c",
@@ -1339,10 +1339,10 @@ Again, this is just the backend. This would not necessarily contain any features
 }
 ```
 
-#### </details>
+</details>
 
-#### <details><summary>Deck Limited JSON</summary>
-
+#### Deck Limited JSON
+<details>
 ```json
 {
 	"id": "fe8fff8c-a5ba-474c-9776-525b6670051f",
@@ -1360,10 +1360,10 @@ Again, this is just the backend. This would not necessarily contain any features
 }
 ```
 
-#### </details>
+</details>
 
-#### <details><summary>Card Editor Payload</summary>
-
+#### Card Editor Payload
+<details>
 ```json
 {
    "id":"",
@@ -1391,10 +1391,10 @@ Again, this is just the backend. This would not necessarily contain any features
 }
 ```
 
-#### </details>
+</details>
 
-#### <details><summary>Deck Editor Payload</summary>
-
+#### Deck Editor Payload
+<details>
 ```json
 {
 	"deckID": "4e331898-c5d5-4b63-9771-0e103832c33e",
@@ -1420,7 +1420,7 @@ Again, this is just the backend. This would not necessarily contain any features
 }
 ```
 
-#### </details>
+</details>
 
 ## Technologies
 
