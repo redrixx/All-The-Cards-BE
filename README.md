@@ -16,8 +16,8 @@ Again, this is just the backend. This would not necessarily contain any features
 | **POST** | `/api/features/random/art` | - | - | IMAGE URL
 | **POST** | `/api/features/recent/decks` | - | - | [[decksLTD](#deck-limited-json)]
 | **POST** | `/api/features/topthree/decks` | deckID | HEADER | [[decksLTD](#deck-limited-json)]
-| **POST** | `/api/features/editor/decks` | [payload](#deck-editor-json) | BODY | MESSAGE or ERROR
-| **POST** | `/api/features/editor/cards` | art_crop, png, [card-payload](#card-editor-json) | MULTIPART/FORM-DATA | MESSAGE or ERROR
+| **POST** | `/api/features/editor/decks` | [payload](#deck-editor-payload) | BODY | MESSAGE or ERROR
+| **POST** | `/api/features/editor/cards` | art_crop, png, [card-payload](#card-editor-payload) | MULTIPART/FORM-DATA | MESSAGE or ERROR
 | **DELETE** | `/api/features/editor/delete` | token, deckID | HEADER | MESSAGE or ERROR
 | **DELETE** | `/api/features/editor/card-delete` | token, cardID | HEADER | MESSAGE or ERROR
 
@@ -169,7 +169,7 @@ Again, this is just the backend. This would not necessarily contain any features
 }
 ```
 
-</details>
+#### </details>
 
 #### <details><summary>Deck JSON</summary>
 
@@ -1259,7 +1259,7 @@ Again, this is just the backend. This would not necessarily contain any features
 }
 ```
 
-</details>
+#### </details>
 
 #### <details><summary>Card Limited JSON</summary>
 
@@ -1339,7 +1339,7 @@ Again, this is just the backend. This would not necessarily contain any features
 }
 ```
 
-</details>
+#### </details>
 
 #### <details><summary>Deck Limited JSON</summary>
 
@@ -1360,7 +1360,7 @@ Again, this is just the backend. This would not necessarily contain any features
 }
 ```
 
-</details>
+#### </details>
 
 #### <details><summary>Card Editor Payload</summary>
 
@@ -1391,7 +1391,7 @@ Again, this is just the backend. This would not necessarily contain any features
 }
 ```
 
-</details>
+#### </details>
 
 #### <details><summary>Deck Editor Payload</summary>
 
@@ -1420,7 +1420,7 @@ Again, this is just the backend. This would not necessarily contain any features
 }
 ```
 
-</details>
+#### </details>
 
 ## Technologies
 
