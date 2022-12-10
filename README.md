@@ -1393,8 +1393,8 @@ Again, this is just the backend. This would not necessarily contain any features
 
 </details>
 
-#### <summary>Deck Editor Payload</summary>
-<details>
+#### Deck Editor Payload
+<details><summary>Example</summary>
 ```json
 {
 	"deckID": "4e331898-c5d5-4b63-9771-0e103832c33e",
@@ -1419,7 +1419,6 @@ Again, this is just the backend. This would not necessarily contain any features
 	]
 }
 ```
-
 </details>
 
 ## Technologies
