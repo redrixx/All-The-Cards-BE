@@ -6,6 +6,27 @@ const superbase = createClient(
     process.env.SERVICE_KEY
 )
 
+// Validating Developer Token
+async function validateDev(token){
+
+    var userData
+    const { data, error } = await superbase.auth.getUser(token)
+    if(!error){ userData = data }
+    if(userData){
+
+        const { data, error } = await superbase.from(atc.usersMaster).select()
+        .eq('id', userData.user.id)
+        .eq('isDev', true)
+
+        if(data && data.length > 0){
+            return true
+        }
+
+    }
+
+    return false
+}
+
 // Sub-Function Call for updating prices.
 async function performPriceUpdate(cardID, response){
 
@@ -143,7 +164,7 @@ module.exports = {
     // Handle Administrative Calls
     handleAdmin: async function (req){
 
-        if(req.headers.access_key && req.headers.access_key === process.env.SERVICE_KEY){
+        if(req.headers.access_key && req.headers.access_key === process.env.SERVICE_KEY && req.headers.token && await validateDev(req.headers.token)){
             
             switch(req.headers.call){
 

@@ -15,15 +15,18 @@ Again, this is just the backend. This would not necessarily contain any features
 | --- | --- | --- | --- | --- |
 | **POST** | `/api/features/random/art` | - | - | IMAGE URL
 | **POST** | `/api/features/recent/decks` | - | - | [[decksLTD](#deck-limited-json)]
-| **POST** | `/api/features/editor/decks` | [payload](#deck-editor-json) | BODY | MESSAGE or ERROR
+| **POST** | `/api/features/topthree/decks` | deckID | HEADER | [[decksLTD](#deck-limited-json)]
+| **POST** | `/api/features/editor/decks` | [payload](#deck-editor-payload) | BODY | MESSAGE or ERROR
+| **POST** | `/api/features/editor/cards` | art_crop, png, [card-payload](#card-editor-payload) | MULTIPART/FORM-DATA | MESSAGE or ERROR
 | **DELETE** | `/api/features/editor/delete` | token, deckID | HEADER | MESSAGE or ERROR
+| **DELETE** | `/api/features/editor/card-delete` | token, cardID | HEADER | MESSAGE or ERROR
 
 ### Card Requests
 | Method | Route | Parameter(s) | Parameter Type(s) | Returns |
 | --- | --- | --- | --- | --- |
 | **POST** | `/api/get/card/id=queryCard` | queryCard | URL | [card](#card-json)
 | **POST** | `/api/search/card/query=queryText` | queryText | URL | [[cardsLTD](#card-limited-json)]
-| **POST** | `/api/search/card/adv/query=?advancedQueryText` | [advancedQueryText](#card-limited-json) | PARAMS | [[cardsLTD](#card-limited-json)]
+| **POST** | `/api/search/card/adv/query=?advancedQueryText` | [advancedQueryText](#advanced-search) | PARAMS | [[cardsLTD](#card-limited-json)]
 
 ### Deck Requests
 | Method | Route | Parameter(s) | Parameter Type(s) | Returns |
@@ -36,10 +39,13 @@ Again, this is just the backend. This would not necessarily contain any features
 | Method | Route | Parameter(s) | Parameter Type(s) | Returns |
 | --- | --- | --- | --- | --- |
 | **POST** | `/api/get/user/id=queryUser` | queryUser | URL | [user](#user-json)
-| **POST** | `/api/search/user/query=queryText` | queryText | URL | [[users](#card-json)]
+| **POST** | `/api/search/user/query=queryText` | queryText | URL | [[users](#user-json)]
+| **POST** | `/api/get/cards/user_id=queryUser` | queryUser | URL | [[cardsLTD](#card-limited-json)]
+| **POST** | `/api/features/user/favorite` | token, deckID/cardID | HEADER, BODY | [[users](#user-json)]
 
 ### Object Examples
-<details><summary>Card JSON</summary>
+#### Card JSON
+<details>
 
 ```json
 {
@@ -166,7 +172,8 @@ Again, this is just the backend. This would not necessarily contain any features
 
 </details>
 
-<details><summary>Deck JSON</summary>
+#### Deck JSON
+<details>
 
 ```json
 {
@@ -1256,7 +1263,8 @@ Again, this is just the backend. This would not necessarily contain any features
 
 </details>
 
-<details><summary>Card Limited JSON</summary>
+#### Card Limited JSON
+<details>
 
 ```json
 {
@@ -1336,7 +1344,8 @@ Again, this is just the backend. This would not necessarily contain any features
 
 </details>
 
-<details><summary>Deck Limited JSON</summary>
+#### Deck Limited JSON
+<details>
 
 ```json
 {
@@ -1357,7 +1366,71 @@ Again, this is just the backend. This would not necessarily contain any features
 
 </details>
 
-<details><summary>Deck Editor Payload</summary>
+#### User JSON
+<details>
+
+```json
+{
+	"id": "6a0cd1d6-1278-45d0-aa0e-419ae50add06",
+	"username": "redrixx",
+	"avatar": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/9/2/92fb453e-6cbe-48c6-98ef-86069791c341.jpg?1562926055",
+	"bio": "ATC Developer.",
+	"name": "Jamier Singleton",
+	"location": "Monroe, LA",
+	"favorites": {
+		"cards": [
+			"79324f73-25cd-477a-b4f0-fd3e1319e451",
+			"41b6381f-4ff8-49e9-bf00-cfe32851318b",
+			"custom-da77525f-88f5-44d3-a978-7345c05bfb0a"
+		],
+		"decks": [
+			"0c1d393f-31d5-4234-b867-0c03a81f22a4",
+			"4e331898-c5d5-4b63-9771-0e103832c33e",
+			"a1d043b5-80a4-4e6c-b00c-cab6b204f64a",
+			"7e8956d7-178b-4066-a88a-05a260adc4ec",
+			"846797a4-4c90-4055-9949-25a6d90c48b8",
+			"86ea3e31-b766-4a2c-9f76-d869dd2387bc"
+		]
+	}
+}
+```
+
+</details>
+
+#### Card Editor Payload
+<details>
+
+```json
+{
+   "id":"",
+   "author":"",
+   "border_color":"black",
+   "cmc":"3",
+   "color_identity":"['B']",
+   "colors":"['B']",
+   "flavor_text":"A tasteful display of text...",
+   "frame":"2022",
+   "frame_effects":null,
+   "image_uris":{
+      "png":null,
+      "art_crop":null
+   },
+   "mana_cost":"{5}{U}{U}",
+   "name":"Ace of Redrixx",
+   "oracle_text":"Many wonders to behold about this one. It's custom.",
+   "power":"5",
+   "produced_mana":"2",
+   "rarity":"mythic rare",
+   "subtype_one":"Immortal",
+   "toughness":"4",
+   "type_one":"Legendary Artifact"
+}
+```
+
+</details>
+
+#### Deck Editor Payload
+<details>
 
 ```json
 {
@@ -1383,7 +1456,14 @@ Again, this is just the backend. This would not necessarily contain any features
 	]
 }
 ```
+</details>
 
+#### Advanced Search
+<details>
+
+```js
+query=?artist=*&cmc=*&color_identity=*&colors=*&flavor_text=*&legalities=*&name=*&oracle_text=*&power=*&rarity=*&set_name=*&set_shorthand=*&subtype_=*&toughness=*&type=*
+```
 </details>
 
 ## Technologies
@@ -1412,4 +1492,4 @@ All The Cards is unofficial Fan Content permitted under the [Fan Content Policy]
 
 ## Project Status
 
-`Pre-Alpha` Stage Development.
+`Beta` Stage Development.
