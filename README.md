@@ -15,8 +15,11 @@ Again, this is just the backend. This would not necessarily contain any features
 | --- | --- | --- | --- | --- |
 | **POST** | `/api/features/random/art` | - | - | IMAGE URL
 | **POST** | `/api/features/recent/decks` | - | - | [[decksLTD](#deck-limited-json)]
+| **POST** | `/api/features/topthree/decks` | deckID | HEADER | [[decksLTD](#deck-limited-json)]
 | **POST** | `/api/features/editor/decks` | [payload](#deck-editor-json) | BODY | MESSAGE or ERROR
+| **POST** | `/api/features/editor/cards` | art_crop, png, [card-payload](#card-editor-json) | MULTIPART/FORM-DATA | MESSAGE or ERROR
 | **DELETE** | `/api/features/editor/delete` | token, deckID | HEADER | MESSAGE or ERROR
+| **DELETE** | `/api/features/editor/card-delete` | token, cardID | HEADER | MESSAGE or ERROR
 
 ### Card Requests
 | Method | Route | Parameter(s) | Parameter Type(s) | Returns |
@@ -37,9 +40,11 @@ Again, this is just the backend. This would not necessarily contain any features
 | --- | --- | --- | --- | --- |
 | **POST** | `/api/get/user/id=queryUser` | queryUser | URL | [user](#user-json)
 | **POST** | `/api/search/user/query=queryText` | queryText | URL | [[users](#card-json)]
+| **POST** | `/api/get/cards/user_id=queryUser` | queryUser | URL | [[cardsLTD](#card-limited-json)]
+| **POST** | `/api/features/user/favorite` | token, deckID/cardID | HEADER, BODY | [[users](#card-json)]
 
 ### Object Examples
-<details><summary>Card JSON</summary>
+#### <details><summary>Card JSON</summary>
 
 ```json
 {
@@ -166,7 +171,7 @@ Again, this is just the backend. This would not necessarily contain any features
 
 </details>
 
-<details><summary>Deck JSON</summary>
+#### <details><summary>Deck JSON</summary>
 
 ```json
 {
@@ -1256,7 +1261,7 @@ Again, this is just the backend. This would not necessarily contain any features
 
 </details>
 
-<details><summary>Card Limited JSON</summary>
+#### <details><summary>Card Limited JSON</summary>
 
 ```json
 {
@@ -1336,7 +1341,7 @@ Again, this is just the backend. This would not necessarily contain any features
 
 </details>
 
-<details><summary>Deck Limited JSON</summary>
+#### <details><summary>Deck Limited JSON</summary>
 
 ```json
 {
@@ -1357,7 +1362,38 @@ Again, this is just the backend. This would not necessarily contain any features
 
 </details>
 
-<details><summary>Deck Editor Payload</summary>
+#### <details><summary>Card Editor Payload</summary>
+
+```json
+{
+   "id":"",
+   "author":"",
+   "border_color":"black",
+   "cmc":"3",
+   "color_identity":"['B']",
+   "colors":"['B']",
+   "flavor_text":"A tasteful display of text...",
+   "frame":"2022",
+   "frame_effects":null,
+   "image_uris":{
+      "png":null,
+      "art_crop":null
+   },
+   "mana_cost":"{5}{U}{U}",
+   "name":"Ace of Redrixx",
+   "oracle_text":"Many wonders to behold about this one. It's custom.",
+   "power":"5",
+   "produced_mana":"2",
+   "rarity":"mythic rare",
+   "subtype_one":"Immortal",
+   "toughness":"4",
+   "type_one":"Legendary Artifact"
+}
+```
+
+</details>
+
+#### <details><summary>Deck Editor Payload</summary>
 
 ```json
 {
@@ -1412,4 +1448,4 @@ All The Cards is unofficial Fan Content permitted under the [Fan Content Policy]
 
 ## Project Status
 
-`Pre-Alpha` Stage Development.
+`Beta` Stage Development.
