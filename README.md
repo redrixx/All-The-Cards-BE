@@ -1366,6 +1366,37 @@ Again, this is just the backend. This would not necessarily contain any features
 
 </details>
 
+#### User JSON
+<details>
+
+```json
+{
+	"id": "6a0cd1d6-1278-45d0-aa0e-419ae50add06",
+	"username": "redrixx",
+	"avatar": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/9/2/92fb453e-6cbe-48c6-98ef-86069791c341.jpg?1562926055",
+	"bio": "ATC Developer.",
+	"name": "Jamier Singleton",
+	"location": "Monroe, LA",
+	"favorites": {
+		"cards": [
+			"79324f73-25cd-477a-b4f0-fd3e1319e451",
+			"41b6381f-4ff8-49e9-bf00-cfe32851318b",
+			"custom-da77525f-88f5-44d3-a978-7345c05bfb0a"
+		],
+		"decks": [
+			"0c1d393f-31d5-4234-b867-0c03a81f22a4",
+			"4e331898-c5d5-4b63-9771-0e103832c33e",
+			"a1d043b5-80a4-4e6c-b00c-cab6b204f64a",
+			"7e8956d7-178b-4066-a88a-05a260adc4ec",
+			"846797a4-4c90-4055-9949-25a6d90c48b8",
+			"86ea3e31-b766-4a2c-9f76-d869dd2387bc"
+		]
+	}
+}
+```
+
+</details>
+
 #### Card Editor Payload
 <details>
 
@@ -1424,6 +1455,14 @@ Again, this is just the backend. This would not necessarily contain any features
 		"76cde4a6-128d-447f-9659-ceb3b345ed33"
 	]
 }
+```
+</details>
+
+#### Advanced Search
+<details>
+
+```js
+query=?artist=*&cmc=*&color_identity=*&colors=*&flavor_text=*&legalities=*&name=*&oracle_text=*&power=*&rarity=*&set_name=*&set_shorthand=*&subtype_=*&toughness=*&type=*
 ```
 </details>
 
