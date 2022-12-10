@@ -1393,8 +1393,8 @@ Again, this is just the backend. This would not necessarily contain any features
 
 </details>
 
-#### Deck Editor Payload
 <details>
+<summary> #### Deck Editor Payload </summary>
 ```json
 {
 	"deckID": "4e331898-c5d5-4b63-9771-0e103832c33e",
