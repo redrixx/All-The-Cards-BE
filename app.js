@@ -6,8 +6,6 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-var apiRouter = require('./routes/api');
-
 var app = express();
 
 var cors = require('cors');
@@ -23,6 +21,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+var apiRouter = require('./routes/api');
 app.use('/api', apiRouter);
 
 //Catchall endpoint
